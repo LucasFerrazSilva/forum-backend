@@ -2,11 +2,11 @@ spring:
   application:
     name: Forum Back-end
 
-datasource:
-  url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/forum}
-  username: ${DATABASE_USER:forum_user}
-  password: ${DATABASE_PASSWORD:forum_password}
-  driver-class-name: org.postgresql.Driver
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/forum}
+    username: ${DATABASE_USER:forum_user}
+    password: ${DATABASE_PASSWORD:forum_password}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
