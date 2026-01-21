@@ -18,6 +18,6 @@ public class TesteEntity {
     private Integer valor;
 
     public void increment() {
-        this.valor++;
+        this.valor *= 2;
     }
 }
