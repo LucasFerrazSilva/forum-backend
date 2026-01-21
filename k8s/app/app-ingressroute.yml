@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: forum-ingressroute
+  namespace: forum
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`forum.lucasferraz.cloud`)
+      kind: Rule
+      services:
+        - name: forum-app
+          port: 8080
+  tls:
+    secretName: forum-certificate-secret
