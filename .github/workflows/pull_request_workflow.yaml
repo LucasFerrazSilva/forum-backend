@@ -39,3 +39,59 @@ jobs:
       - name: Push Docker image
         run: docker push "$DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
 
+  deploy_to_vps:
+    needs: push_to_registry
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      IMAGE_NAME: forum-backend
+      IMAGE_TAG: latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Copy k8s manifests to VPS
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "k8s/*"
+          target: "~/forum-k8s"
+          strip_components: 1
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            # Criar namespace se não existir
+            kubectl get namespace forum || kubectl create namespace forum
+            
+            # Aplicar secrets
+            kubectl apply -f ~/forum-k8s/secrets/db-credentials.yml
+            
+            # Aplicar manifests do PostgreSQL
+            kubectl apply -f ~/forum-k8s/postgres/postgres-pvc.yml
+            kubectl apply -f ~/forum-k8s/postgres/postgres-deployment.yml
+            kubectl apply -f ~/forum-k8s/postgres/postgres-service.yml
+            
+            # Aguardar PostgreSQL estar pronto
+            kubectl wait --for=condition=ready pod -l app=postgres -n forum --timeout=120s
+            
+            # Aplicar manifests da aplicação
+            kubectl apply -f ~/forum-k8s/app/app-deployment.yml
+            kubectl apply -f ~/forum-k8s/app/app-service.yml
+            kubectl apply -f ~/forum-k8s/app/app-ingressroute.yml
+            
+            # Forçar o rollout para puxar a nova imagem
+            kubectl rollout restart deployment/forum-app-deployment -n forum
+            
+            # Aguardar o deploy completar
+            kubectl rollout status deployment/forum-app-deployment -n forum --timeout=300s
+
