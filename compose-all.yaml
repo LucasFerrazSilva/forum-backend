@@ -14,9 +14,12 @@ services:
 
   forum:
     container_name: forum-backend
-    image: 'lucasferraz95/forum-backend:1.0.0'
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - DATABASE_URL=jdbc:postgresql://postgres:5432/forum
+      - SHOW_SQL=false
     ports:
       - "8080:8080"
     networks:
