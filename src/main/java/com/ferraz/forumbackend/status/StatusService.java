@@ -1,5 +1,6 @@
 package com.ferraz.forumbackend.status;
 
+import com.ferraz.forumbackend.infra.exception.DatabaseException;
 import com.ferraz.forumbackend.status.entity.DatabaseInfo;
 import com.ferraz.forumbackend.status.entity.StatusDTO;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,12 @@ public class StatusService {
     private final StatusDAO statusDAO;
 
     public StatusDTO getStatus() {
-        DatabaseInfo databaseInfo = this.statusDAO.getDatabaseInfo();
-        return new StatusDTO(LocalDateTime.now(), databaseInfo);
+        try {
+            DatabaseInfo databaseInfo = this.statusDAO.getDatabaseInfo();
+            return new StatusDTO(LocalDateTime.now(), databaseInfo);
+        } catch (Exception e) {
+            throw new DatabaseException(e);
+        }
     }
 
 }
