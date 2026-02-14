@@ -1,18 +1,20 @@
 package com.ferraz.forumbackend.infra.exception;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @JsonPropertyOrder({"statusCode", "name", "message", "action"})
 public class ErrorResponse {
 
-    private final int statusCode;
-    private final String name;
-    private final String message;
-    private final String action;
+    private int statusCode;
+    private String name;
+    private String message;
+    private String action;
 
     public ErrorResponse(BaseException exception) {
         this.statusCode = exception.getStatusCode();
