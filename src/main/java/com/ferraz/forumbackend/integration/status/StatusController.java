@@ -1,6 +1,6 @@
-package com.ferraz.forumbackend.status;
+package com.ferraz.forumbackend.integration.status;
 
-import com.ferraz.forumbackend.status.entity.StatusDTO;
+import com.ferraz.forumbackend.integration.status.entity.StatusDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

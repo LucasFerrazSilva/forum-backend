@@ -1,4 +1,4 @@
-package com.ferraz.forumbackend.util;
+package com.ferraz.forumbackend.integration.util;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

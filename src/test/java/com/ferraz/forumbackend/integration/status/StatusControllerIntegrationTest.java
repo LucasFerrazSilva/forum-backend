@@ -1,9 +1,9 @@
-package com.ferraz.forumbackend.status;
+package com.ferraz.forumbackend.integration.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
-import com.ferraz.forumbackend.status.entity.StatusDTO;
-import com.ferraz.forumbackend.util.TestcontainersConfig;
+import com.ferraz.forumbackend.integration.status.entity.StatusDTO;
+import com.ferraz.forumbackend.integration.util.TestcontainersConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
-class StatusControllerTest {
+class StatusControllerIntegrationTest {
 
     @Autowired
     private MockMvc mvc;

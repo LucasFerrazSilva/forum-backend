@@ -1,7 +1,6 @@
-package com.ferraz.forumbackend.status.entity;
+package com.ferraz.forumbackend.integration.status.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record StatusDTO(
         LocalDateTime updatedAt,

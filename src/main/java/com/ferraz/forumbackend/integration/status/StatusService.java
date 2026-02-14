@@ -1,14 +1,12 @@
-package com.ferraz.forumbackend.status;
+package com.ferraz.forumbackend.integration.status;
 
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
-import com.ferraz.forumbackend.status.entity.DatabaseInfo;
-import com.ferraz.forumbackend.status.entity.StatusDTO;
+import com.ferraz.forumbackend.integration.status.entity.DatabaseInfo;
+import com.ferraz.forumbackend.integration.status.entity.StatusDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

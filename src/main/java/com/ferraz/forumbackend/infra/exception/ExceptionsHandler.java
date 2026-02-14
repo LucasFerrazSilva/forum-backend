@@ -2,6 +2,7 @@ package com.ferraz.forumbackend.infra.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,7 +22,7 @@ public class ExceptionsHandler {
     public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         ErrorResponse errorResponse =
                 new ErrorResponse(
-                        405,
+                        HttpStatus.METHOD_NOT_ALLOWED.value(),
                         "HttpRequestMethodNotSupportedException",
                         "Método não permitido",
                         "Utilize um método permitido");
@@ -33,8 +34,8 @@ public class ExceptionsHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         ErrorResponse errorResponse =
                 new ErrorResponse(
-                        500,
-                        "Exception",
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        ex.getClass().getSimpleName(),
                         "Erro interno",
                         "Verifique os logs do sistema para obter mais informações");
 

@@ -1,4 +1,4 @@
-package com.ferraz.forumbackend.util;
+package com.ferraz.forumbackend.integration.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
