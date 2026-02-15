@@ -12,7 +12,7 @@ class ErrorResponseTest {
 
     @Test
     @DisplayName("Deve definir as variáveis internas corretamente com AllArgsConstructor")
-    void testAllArgsConstructor() {
+    void shouldSetInternalFieldsCorrectlyWhenUsingAllArgsConstructor() {
         ErrorResponse errorResponse =
                 new ErrorResponse(
                         405,
@@ -28,7 +28,7 @@ class ErrorResponseTest {
 
     @Test
     @DisplayName("Deve definir as variáveis internas corretamente com construtor de exception")
-    void testExceptionConstructor() {
+    void shouldSetInternalFieldsCorrectlyWhenUsingExceptionConstructor() {
         DatabaseException databaseException = new DatabaseException(new RuntimeException("Teste"));
 
         ErrorResponse errorResponse = new ErrorResponse(databaseException);
