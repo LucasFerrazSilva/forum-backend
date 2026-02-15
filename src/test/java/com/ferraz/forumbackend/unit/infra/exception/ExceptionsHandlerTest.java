@@ -15,7 +15,7 @@ class ExceptionsHandlerTest {
     final ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
 
     @Test
-    void handleBaseException() {
+    void shouldBuildErrorResponseCorrectlyWhenHandlingDatabaseException() {
         DatabaseException databaseException = new DatabaseException(new RuntimeException("Teste"));
 
         ResponseEntity<ErrorResponse> response = exceptionsHandler.handleBaseException(databaseException);
@@ -29,7 +29,7 @@ class ExceptionsHandlerTest {
     }
 
     @Test
-    void handleHttpRequestMethodNotSupportedException() {
+    void shouldBuildErrorResponseCorrectlyWhenHandlingHttpRequestMethodNotSupportedException() {
         HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("Teste");
         ResponseEntity<ErrorResponse> response = exceptionsHandler.handleHttpRequestMethodNotSupportedException(exception);
         ErrorResponse errorResponse = response.getBody();
@@ -42,7 +42,7 @@ class ExceptionsHandlerTest {
     }
 
     @Test
-    void handleException() {
+    void shouldBuildErrorResponseCorrectlyWhenHandlingGenericException() {
         RuntimeException exception = new RuntimeException("Teste");
         ResponseEntity<ErrorResponse> response = exceptionsHandler.handleException(exception);
         ErrorResponse errorResponse = response.getBody();

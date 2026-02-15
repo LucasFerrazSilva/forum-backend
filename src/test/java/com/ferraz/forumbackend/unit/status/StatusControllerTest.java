@@ -24,7 +24,7 @@ class StatusControllerTest {
 
     @Test
     @DisplayName("Deve lançar um DatabaseException quando buscar status do banco com ele inascessível")
-    void testInvalidDatabaseController() {
+    void shouldThrowDatabaseExceptionWhenDatabaseIsInaccessibleOnController() {
         when(statusService.getStatus()).thenThrow(new DatabaseException(new RuntimeException()));
         Assertions.assertThrows(DatabaseException.class, () -> {
             statusController.getStatus();

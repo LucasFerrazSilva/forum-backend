@@ -26,7 +26,7 @@ class StatusControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("Deve retornar 200 quando fizer um GET no endpoint '/api/v1/status'")
-    void testGet() throws Exception {
+    void shouldReturn200WhenStatusEndpointIsCalled() throws Exception {
         MockHttpServletResponse response = mvc.perform(MockMvcRequestBuilders.get("/api/v1/status")).andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
@@ -43,7 +43,7 @@ class StatusControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("Deve retornar 405 quando fizer um POST no endpoint '/api/v1/status'")
-    void testPost() throws Exception {
+    void shouldReturn405WhenPostStatusEndpointIsCalled() throws Exception {
         MockHttpServletResponse response = mvc.perform(MockMvcRequestBuilders.post("/api/v1/status")).andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED.value());

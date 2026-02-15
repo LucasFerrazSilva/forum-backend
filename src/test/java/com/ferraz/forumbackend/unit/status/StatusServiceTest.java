@@ -24,7 +24,7 @@ class StatusServiceTest {
 
     @Test
     @DisplayName("Deve lançar um DatabaseException quando buscar status do banco com ele inascessível")
-    void testInvalidDatabase() {
+    void shouldThrowDatabaseExceptionWhenDatabaseIsInaccessible() {
         when(statusDAO.getDatabaseInfo()).thenThrow(new RuntimeException("Banco fora do ar"));
         Assertions.assertThrows(DatabaseException.class, () -> {
             statusService.getStatus();
