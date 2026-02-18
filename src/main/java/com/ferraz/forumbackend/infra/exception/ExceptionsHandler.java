@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ExceptionsHandler {
@@ -26,6 +27,18 @@ public class ExceptionsHandler {
                         "HttpRequestMethodNotSupportedException",
                         "Método não permitido",
                         "Utilize um método permitido");
+
+        return handleException(ex, errorResponse);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex) {
+        ErrorResponse errorResponse =
+                new ErrorResponse(
+                        HttpStatus.NOT_FOUND.value(),
+                        "NoResourceFoundException",
+                        "Endpoint não encontrado",
+                        "Verifique se o path está correto");
 
         return handleException(ex, errorResponse);
     }
