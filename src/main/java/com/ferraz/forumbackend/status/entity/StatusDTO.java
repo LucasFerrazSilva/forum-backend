@@ -1,4 +1,4 @@
-package com.ferraz.forumbackend.integration.status.entity;
+package com.ferraz.forumbackend.status.entity;
 
 import java.time.LocalDateTime;
 

@@ -1,8 +1,8 @@
-package com.ferraz.forumbackend.integration.status;
+package com.ferraz.forumbackend.status;
 
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
-import com.ferraz.forumbackend.integration.status.entity.DatabaseInfo;
-import com.ferraz.forumbackend.integration.status.entity.StatusDTO;
+import com.ferraz.forumbackend.status.entity.DatabaseInfo;
+import com.ferraz.forumbackend.status.entity.StatusDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
