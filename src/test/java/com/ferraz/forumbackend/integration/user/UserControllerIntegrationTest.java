@@ -128,4 +128,36 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("email");
     }
 
+    @Test
+    @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' usando um username ja cadastrado")
+    void shouldReturn400WhenUsersEndpointIsCalledWithPostWithNonUniqueUsername() throws Exception {
+        NewUserDTO newUserDTO1 = new NewUserDTO(
+                "NonUniqueUsername",
+                "email1@domain.com",
+                "senha123"
+        );
+        String requestBody1 = objectMapper.writeValueAsString(newUserDTO1);
+
+        NewUserDTO newUserDTO2 = new NewUserDTO(
+                "nonuniqueusername",
+                "Email2@domain.com",
+                "senha123"
+        );
+        String requestBody2 = objectMapper.writeValueAsString(newUserDTO2);
+
+        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody1);
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
+
+        response = post(mvc, ENDPOINT, requestBody2);
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.getContentAsString()).isNotBlank();
+
+        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getInvalidFields()).isNotEmpty();
+        assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
+    }
+
 }

@@ -10,7 +10,7 @@ public class NonUniqueEmailException extends ValidationException {
     }
 
     public NonUniqueEmailException(String email, String fieldName) {
-        super(new InvalidField(fieldName, "O email " + email + " já está cadastrado"));
+        super(new InvalidField(fieldName, "O email %s já está cadastrado".formatted(email)));
     }
 
 }

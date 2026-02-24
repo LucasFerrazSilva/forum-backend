@@ -24,11 +24,6 @@ public class ExceptionsHandler {
         return handleException(ex);
     }
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
-        return handleException(ex);
-    }
-
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         ErrorResponse errorResponse =

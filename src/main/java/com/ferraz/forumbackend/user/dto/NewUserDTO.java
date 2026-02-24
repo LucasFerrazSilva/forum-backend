@@ -13,7 +13,11 @@ public record NewUserDTO(
         String password
 ) {
         @Override
+        public String username() {
+                return username.toLowerCase();
+        }
+        @Override
         public String email() {
-                return email != null ? email.toLowerCase() : null;
+                return email.toLowerCase();
         }
 }
