@@ -9,6 +9,5 @@ public class DatabaseException extends BaseException {
             "Verifique se as configurações de conexão com o banco de dados estão corretas",
             e
         );
-
     }
 }
