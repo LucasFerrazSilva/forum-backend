@@ -17,7 +17,7 @@ public class UniqueEmailValidator implements InsertUserValidator {
 
     @Override
     public void validate(NewUserDTO newUserDTO) {
-        Optional<UserEntity> users = userRepository.findByEmail(newUserDTO.email());
+        Optional<UserEntity> users = userRepository.findFirstByEmail(newUserDTO.email());
 
         if (users.isPresent()) {
             throw new NonUniqueEmailException(newUserDTO.email());

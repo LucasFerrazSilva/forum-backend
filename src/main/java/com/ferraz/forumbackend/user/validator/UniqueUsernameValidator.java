@@ -17,7 +17,7 @@ public class UniqueUsernameValidator implements InsertUserValidator {
 
     @Override
     public void validate(NewUserDTO newUserDTO) {
-        Optional<UserEntity> users = userRepository.findByUsername(newUserDTO.username());
+        Optional<UserEntity> users = userRepository.findFirstByUsername(newUserDTO.username());
 
         if (users.isPresent()) {
             throw new NonUniqueUsernameException(newUserDTO.email());

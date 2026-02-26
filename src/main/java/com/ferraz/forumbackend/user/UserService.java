@@ -29,6 +29,6 @@ public class UserService {
             throw new ValidationException(new InvalidField("username", "O username não pode estar vazio"));
         }
 
-        return userRepository.findByUsername(username.toLowerCase()).orElseThrow();
+        return userRepository.findFirstByUsername(username.toLowerCase()).orElseThrow();
     }
 }
