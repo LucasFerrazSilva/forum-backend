@@ -18,7 +18,7 @@ public class ValidationException extends BaseException {
         super(
                 "Corpo da requisição inválido",
                 HttpStatus.BAD_REQUEST.value(),
-                "ValidationException",
+                ValidationException.class.getSimpleName(),
                 "Revise os erros dos campos inválidos",
                 invalidFields
         );
