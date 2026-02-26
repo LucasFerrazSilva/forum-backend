@@ -158,4 +158,20 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.updatedAt()).isNotNull();
     }
 
+    @Test
+    @DisplayName("Deve retornar 404 (Not found) quando fizer um GET no endpoint '/api/v1/users/{username}' com username inválido")
+    void shouldReturn404WhenUsersEndpointIsCalledWithGetAndInvalidUsername() throws Exception {
+        String invalidUsername = "invalidUsername";
+
+        MockHttpServletResponse response = get(mvc, ENDPOINT + "/" + invalidUsername);
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(response.getContentAsString()).isNotBlank();
+
+        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(errorResponse.getMessage()).isEqualTo("Nenhum usuário encontrado para o username " + invalidUsername);
+
+    }
+
 }

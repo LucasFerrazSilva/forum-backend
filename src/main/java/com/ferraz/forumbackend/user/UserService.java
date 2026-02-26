@@ -1,7 +1,6 @@
 package com.ferraz.forumbackend.user;
 
-import com.ferraz.forumbackend.infra.exception.InvalidField;
-import com.ferraz.forumbackend.infra.exception.ValidationException;
+import com.ferraz.forumbackend.infra.exception.NotFoundException;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.validator.InsertUserValidator;
 import jakarta.transaction.Transactional;
@@ -25,10 +24,7 @@ public class UserService {
     }
 
     public UserEntity findByUsername(String username) {
-        if (username == null || username.isEmpty()) {
-            throw new ValidationException(new InvalidField("username", "O username não pode estar vazio"));
-        }
-
-        return userRepository.findFirstByUsername(username.toLowerCase()).orElseThrow();
+        return userRepository.findFirstByUsername(username.toLowerCase())
+                .orElseThrow(() -> new NotFoundException("Nenhum usuário encontrado para o username " + username));
     }
 }
