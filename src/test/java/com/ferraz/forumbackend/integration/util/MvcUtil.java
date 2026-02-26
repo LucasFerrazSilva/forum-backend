@@ -14,4 +14,8 @@ public class MvcUtil {
         ).andReturn().getResponse();
     }
 
+    public static MockHttpServletResponse get(MockMvc mvc, String endpoint) throws Exception {
+        return  mvc.perform(MockMvcRequestBuilders.get(endpoint)).andReturn().getResponse();
+    }
+
 }

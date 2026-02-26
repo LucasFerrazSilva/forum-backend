@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.infra.exception.InvalidField;
 import com.ferraz.forumbackend.integration.AbstractIntegrationTest;
+import com.ferraz.forumbackend.integration.fixture.UserFixture;
+import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserRepository;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static com.ferraz.forumbackend.integration.util.MvcUtil.get;
 import static com.ferraz.forumbackend.integration.util.MvcUtil.post;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,6 +36,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserFixture userFixture;
+
     @BeforeEach
     void afterEach() {
         userRepository.deleteAll();
@@ -41,11 +47,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 201 (Created) quando fizer um POST no endpoint '/api/v1/users'")
     void shouldReturn201WhenUsersEndpointIsCalledWithPost() throws Exception {
-        NewUserDTO newUserDTO = new NewUserDTO(
-                "username",
-                "email@domain.com",
-                "senha123"
-        );
+        NewUserDTO newUserDTO = userFixture.newUserDTO();
         String requestBody = objectMapper.writeValueAsString(newUserDTO);
 
         MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
@@ -76,11 +78,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' sem enviar os campos necessários")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithoutRequiredFields() throws Exception {
-        NewUserDTO newUserDTO = new NewUserDTO(
-                "",
-                "  ",
-                null
-        );
+        NewUserDTO newUserDTO =
+                userFixture.newUserDTO(u -> u.username("").email(" ").password(null));
+
         String requestBody = objectMapper.writeValueAsString(newUserDTO);
 
         MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
@@ -99,25 +99,15 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' usando um email ja cadastrado")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithNonUniqueEmail() throws Exception {
-        NewUserDTO newUserDTO1 = new NewUserDTO(
-                "username1",
-                "email@domain.com",
-                "senha123"
-        );
-        String requestBody1 = objectMapper.writeValueAsString(newUserDTO1);
+        UserEntity existingUser =
+                userFixture.user(u -> u.email("Email@domain.com"));
 
-        NewUserDTO newUserDTO2 = new NewUserDTO(
-                "username2",
-                "Email@domain.com",
-                "senha123"
-        );
-        String requestBody2 = objectMapper.writeValueAsString(newUserDTO2);
+        NewUserDTO newUserDTO =
+                userFixture.newUserDTO(u -> u.email(existingUser.getEmail().toLowerCase()));
 
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody1);
+        String requestBody = objectMapper.writeValueAsString(newUserDTO);
 
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
-
-        response = post(mvc, ENDPOINT, requestBody2);
+        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
@@ -131,25 +121,15 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' usando um username ja cadastrado")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithNonUniqueUsername() throws Exception {
-        NewUserDTO newUserDTO1 = new NewUserDTO(
-                "NonUniqueUsername",
-                "email1@domain.com",
-                "senha123"
-        );
-        String requestBody1 = objectMapper.writeValueAsString(newUserDTO1);
+        UserEntity existingUser =
+                userFixture.user(u -> u.username("NonUniqueUsername"));
 
-        NewUserDTO newUserDTO2 = new NewUserDTO(
-                "nonuniqueusername",
-                "Email2@domain.com",
-                "senha123"
-        );
-        String requestBody2 = objectMapper.writeValueAsString(newUserDTO2);
+        NewUserDTO newUserDTO =
+                userFixture.newUserDTO(u -> u.username(existingUser.getUsername().toLowerCase()));
 
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody1);
+        String requestBody = objectMapper.writeValueAsString(newUserDTO);
 
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
-
-        response = post(mvc, ENDPOINT, requestBody2);
+        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
@@ -158,6 +138,24 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 (Ok) quando fizer um GET no endpoint '/api/v1/users/{username}' com username válido")
+    void shouldReturn200WhenUsersEndpointIsCalledWithGetAndValidUsername() throws Exception {
+        UserEntity user = userFixture.user();
+
+        MockHttpServletResponse response = get(mvc, ENDPOINT + "/" + user.getUsername());
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.getContentAsString()).isNotBlank();
+
+        UserDTO userDTO = objectMapper.readValue(response.getContentAsString(), UserDTO.class );
+        assertThat(userDTO).isNotNull();
+        assertThat(userDTO.id()).isNotNull();
+        assertThat(userDTO.username()).isEqualTo(user.getUsername());
+        assertThat(userDTO.email()).isEqualTo(user.getEmail());
+        assertThat(userDTO.createdAt()).isNotNull();
+        assertThat(userDTO.updatedAt()).isNotNull();
     }
 
 }
