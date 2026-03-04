@@ -20,7 +20,7 @@ public class UniqueUsernameValidator implements InsertUserValidator {
         Optional<UserEntity> users = userRepository.findFirstByUsername(newUserDTO.username());
 
         if (users.isPresent()) {
-            throw new NonUniqueUsernameException(newUserDTO.email());
+            throw new NonUniqueUsernameException(newUserDTO.username());
         }
     }
 }

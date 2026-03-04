@@ -116,6 +116,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("email");
+        assertThat(errorResponse.getInvalidFields().getFirst().message())
+                .isEqualTo("O email %s já está cadastrado".formatted(existingUser.getEmail()));
     }
 
     @Test
@@ -138,6 +140,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
+        assertThat(errorResponse.getInvalidFields().getFirst().message())
+                .isEqualTo("O username %s já está cadastrado".formatted(existingUser.getUsername()));
     }
 
     @Test
