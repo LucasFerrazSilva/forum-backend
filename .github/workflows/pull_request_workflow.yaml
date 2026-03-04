@@ -63,6 +63,7 @@ jobs:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       IMAGE_NAME: forum-backend
       APP_VERSION: ${{ needs.push_to_registry.outputs.app_version }}
+      PASSWORD_PEPPER: ${{ secrets.PASSWORD_PEPPER }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -85,11 +86,16 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION
+          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION,PASSWORD_PEPPER
           script: |
             set -e
 
             kubectl get namespace forum >/dev/null 2>&1 || kubectl create namespace forum
+      
+            kubectl create secret generic security \
+            --from-literal=PASSWORD_PEPPER="$PASSWORD_PEPPER" \
+            -n forum \
+            --dry-run=client -o yaml | kubectl apply -f -
 
             kubectl apply -f ~/forum-k8s/secrets/db-credentials.yml
 

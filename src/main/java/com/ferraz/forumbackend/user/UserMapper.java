@@ -2,17 +2,20 @@ package com.ferraz.forumbackend.user;
 
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
 public class UserMapper {
 
-    public static UserEntity toEntity(NewUserDTO newUserDTO) {
+    private UserMapper() {}
+
+    public static UserEntity toEntity(NewUserDTO newUserDTO, PasswordEncoder passwordEncoder) {
         UserEntity userEntity = new UserEntity();
 
         userEntity.setUsername(newUserDTO.username());
         userEntity.setEmail(newUserDTO.email());
-        userEntity.setPassword(newUserDTO.password());
+        userEntity.setPassword(passwordEncoder.encode(newUserDTO.password()));
         userEntity.setCreatedAt(LocalDateTime.now());
         userEntity.setUpdatedAt(LocalDateTime.now());
 
