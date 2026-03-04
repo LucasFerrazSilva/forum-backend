@@ -36,3 +36,8 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: POSTGRES_PASSWORD
+            - name: PASSWORD_PEPPER
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: PASSWORD_PEPPER

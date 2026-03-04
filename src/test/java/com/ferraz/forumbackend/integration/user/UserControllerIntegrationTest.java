@@ -15,9 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.ferraz.forumbackend.integration.util.MvcUtil.get;
 import static com.ferraz.forumbackend.integration.util.MvcUtil.post;
@@ -35,6 +37,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserFixture userFixture;
@@ -63,6 +68,11 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.email()).isEqualTo(newUserDTO.email());
         assertThat(userDTO.createdAt()).isNotNull();
         assertThat(userDTO.updatedAt()).isNotNull();
+
+        Optional<UserEntity> userEntityOptional = userRepository.findById(userDTO.id());
+        assertThat(userEntityOptional).isPresent();
+        UserEntity userEntity = userEntityOptional.get();
+        assertThat(passwordEncoder.matches(newUserDTO.password(), userEntity.getPassword())).isTrue();
     }
 
     @Test
