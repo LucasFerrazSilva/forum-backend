@@ -73,6 +73,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(userEntityOptional).isPresent();
         UserEntity userEntity = userEntityOptional.get();
         assertThat(passwordEncoder.matches(newUserDTO.password(), userEntity.getPassword())).isTrue();
+        assertThat(passwordEncoder.matches("SenhaInvalida", userEntity.getPassword())).isFalse();
     }
 
     @Test
