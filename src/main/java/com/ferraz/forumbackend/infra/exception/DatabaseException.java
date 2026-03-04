@@ -5,10 +5,9 @@ public class DatabaseException extends BaseException {
         super(
             "Erro ao conectar no banco de dados",
             503,
-            "DatabaseException",
+            DatabaseException.class.getSimpleName(),
             "Verifique se as configurações de conexão com o banco de dados estão corretas",
             e
         );
-
     }
 }

@@ -1,6 +1,6 @@
 package com.ferraz.forumbackend.integration;
 
-import com.ferraz.forumbackend.integration.status.StatusService;
+import com.ferraz.forumbackend.status.StatusService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

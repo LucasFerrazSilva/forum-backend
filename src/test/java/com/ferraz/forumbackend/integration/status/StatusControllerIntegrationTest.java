@@ -3,7 +3,7 @@ package com.ferraz.forumbackend.integration.status;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.integration.AbstractIntegrationTest;
-import com.ferraz.forumbackend.integration.status.entity.StatusDTO;
+import com.ferraz.forumbackend.status.entity.StatusDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

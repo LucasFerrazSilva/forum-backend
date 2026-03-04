@@ -1,8 +1,8 @@
 package com.ferraz.forumbackend.unit.status;
 
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
-import com.ferraz.forumbackend.integration.status.StatusDAO;
-import com.ferraz.forumbackend.integration.status.StatusService;
+import com.ferraz.forumbackend.status.StatusDAO;
+import com.ferraz.forumbackend.status.StatusService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

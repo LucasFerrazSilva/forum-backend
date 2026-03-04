@@ -1,6 +1,6 @@
-package com.ferraz.forumbackend.integration.status;
+package com.ferraz.forumbackend.status;
 
-import com.ferraz.forumbackend.integration.status.entity.DatabaseInfo;
+import com.ferraz.forumbackend.status.entity.DatabaseInfo;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
