@@ -12,3 +12,4 @@ cors:
 
 security:
   pepper: Pepper123
+  rounds: 4

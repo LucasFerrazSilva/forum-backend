@@ -3,6 +3,7 @@ package com.ferraz.forumbackend.integration.fixture;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
+import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -69,6 +70,44 @@ public class UserFixture {
 
         public NewUserDTO build() {
             return new NewUserDTO(username, email, password);
+        }
+
+    }
+
+
+    public UpdateUserDTO updateUserDTO() {
+        return updateUserDTO(b -> {});
+    }
+
+    public UpdateUserDTO updateUserDTO(Consumer<UpdateUserDTOBuilder> customizer) {
+        UpdateUserDTOBuilder builder = new UpdateUserDTOBuilder();
+        customizer.accept(builder);
+        return builder.build();
+    }
+
+    public class UpdateUserDTOBuilder {
+
+        private String username = null;
+        private String email = null;
+        private String password = null;
+
+        public UpdateUserDTOBuilder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public UpdateUserDTOBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public UpdateUserDTOBuilder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public UpdateUserDTO build() {
+            return new UpdateUserDTO(username, email, password);
         }
 
     }

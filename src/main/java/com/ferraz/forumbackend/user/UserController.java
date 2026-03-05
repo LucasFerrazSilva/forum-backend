@@ -1,6 +1,7 @@
 package com.ferraz.forumbackend.user;
 
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
+import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -26,6 +27,13 @@ public class UserController {
     @GetMapping("/{username}")
     public ResponseEntity<UserDTO> findByUsername(@PathVariable String username) {
         UserEntity userEntity = userService.findByUsername(username);
+        UserDTO userDTO = UserMapper.toDTO(userEntity);
+        return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
+    }
+
+    @PatchMapping("/{username}")
+    public ResponseEntity<UserDTO> update(@PathVariable String username, @RequestBody UpdateUserDTO updateUserDTO) {
+        UserEntity userEntity = userService.update(username, updateUserDTO);
         UserDTO userDTO = UserMapper.toDTO(userEntity);
         return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
     }

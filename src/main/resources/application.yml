@@ -37,3 +37,4 @@ cors:
 
 security:
   pepper: ${PASSWORD_PEPPER}
+  rounds: ${PASSWORD_ROUNDS:14}

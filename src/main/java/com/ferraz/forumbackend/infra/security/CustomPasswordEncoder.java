@@ -11,8 +11,8 @@ public class CustomPasswordEncoder implements PasswordEncoder {
     private final PasswordEncoder passwordEncoder;
     private final String pepper;
 
-    public CustomPasswordEncoder(@Value("${security.pepper}") String pepper) {
-        this.passwordEncoder = new BCryptPasswordEncoder();
+    public CustomPasswordEncoder(@Value("${security.pepper}") String pepper, @Value("${security.rounds}") Integer rounds) {
+        this.passwordEncoder = new BCryptPasswordEncoder(rounds);
         this.pepper = pepper;
     }
 
