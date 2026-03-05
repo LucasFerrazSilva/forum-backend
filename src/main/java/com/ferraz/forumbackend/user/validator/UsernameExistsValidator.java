@@ -5,6 +5,7 @@ import com.ferraz.forumbackend.user.UserRepository;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.exception.NonUniqueUsernameException;
+import com.ferraz.forumbackend.user.exception.UsernameNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,27 +15,16 @@ import static org.springframework.util.StringUtils.hasText;
 
 @Component
 @RequiredArgsConstructor
-public class UniqueUsernameValidator implements InsertUserValidator, UpdateUserValidator {
+public class UsernameExistsValidator implements UpdateUserValidator {
 
     private final UserRepository userRepository;
 
     @Override
-    public void validate(NewUserDTO newUserDTO) {
-        Optional<UserEntity> users = userRepository.findFirstByUsername(newUserDTO.username());
-
-        if (users.isPresent()) {
-            throw new NonUniqueUsernameException(newUserDTO.username());
-        }
-    }
-
-    @Override
     public void validate(String username, UpdateUserDTO updateUserDTO) {
-        if (!hasText(updateUserDTO.username())) return;
+        Optional<UserEntity> user = userRepository.findFirstByUsername(username.toLowerCase());
 
-        Optional<UserEntity> user = userRepository.findFirstByUsername(updateUserDTO.username());
-
-        if (user.isPresent() && !username.equals(user.get().getUsername())) {
-            throw new NonUniqueUsernameException(updateUserDTO.username());
+        if (user.isEmpty()) {
+            throw new UsernameNotFoundException(username);
         }
     }
 }

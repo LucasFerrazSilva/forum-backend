@@ -18,4 +18,12 @@ public class MvcUtil {
         return  mvc.perform(MockMvcRequestBuilders.get(endpoint)).andReturn().getResponse();
     }
 
+    public static MockHttpServletResponse patch(MockMvc mvc, String endpoint, String requestBody) throws Exception {
+        return  mvc.perform(
+                MockMvcRequestBuilders.patch(endpoint)
+                        .contentType("application/json")
+                        .content(requestBody)
+        ).andReturn().getResponse();
+    }
+
 }
