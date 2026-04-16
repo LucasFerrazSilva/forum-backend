@@ -10,7 +10,7 @@ import com.ferraz.forumbackend.user.UserRepository;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserFixture userFixture;
 
-    @BeforeEach
+    @AfterEach
     void afterEach() {
         userRepository.deleteAll();
     }

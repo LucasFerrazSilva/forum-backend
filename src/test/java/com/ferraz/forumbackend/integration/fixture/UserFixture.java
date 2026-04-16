@@ -45,7 +45,6 @@ public class UserFixture {
         return builder.build();
     }
 
-
     public class NewUserDTOBuilder {
 
         private final Integer rand = new Random().nextInt(100000);

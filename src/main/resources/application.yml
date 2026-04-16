@@ -38,3 +38,8 @@ cors:
 security:
   pepper: ${PASSWORD_PEPPER}
   rounds: ${PASSWORD_ROUNDS:14}
+
+server:
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+    expiration-days: 30

@@ -13,3 +13,8 @@ cors:
 security:
   pepper: Pepper123
   rounds: 4
+
+server:
+  cookie:
+    secure: false
+    expiration-days: 30
