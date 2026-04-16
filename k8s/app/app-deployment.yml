@@ -41,3 +41,5 @@ spec:
                 secretKeyRef:
                   name: security
                   key: PASSWORD_PEPPER
+            - name: COOKIE_SECURE
+              value: "true"
