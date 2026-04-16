@@ -44,6 +44,18 @@ Add new migrations as `V{n}__Description.sql`. Never alter existing migration fi
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,...` | |
 | `COOKIE_SECURE` | `false` | Set `true` in production |
 
+## Versioning
+
+**Always bump `<version>` in `pom.xml` with every change**, following [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`):
+
+| Change type | What to bump | Example |
+|---|---|---|
+| Breaking change / incompatible API | `MAJOR` | `1.1.0` → `2.0.0` |
+| New feature, backwards-compatible | `MINOR` | `1.1.0` → `1.2.0` |
+| Bug fix, refactor, config/infra change | `PATCH` | `1.1.0` → `1.1.1` |
+
+The version in `pom.xml` is used directly as the Docker image tag in CI (`pull_request_workflow.yaml`), so it must be updated before merging to `main`.
+
 ## Developer Workflows
 
 ### Run locally

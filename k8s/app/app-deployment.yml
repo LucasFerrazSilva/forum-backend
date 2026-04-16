@@ -23,6 +23,20 @@ spec:
           image: lucasferraz95/forum-backend:1.0.0
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
           env:
             - name: DATABASE_URL
               value: "jdbc:postgresql://postgres:5432/forum"
