@@ -17,4 +17,8 @@ class ForumBackEndApplicationTests extends AbstractIntegrationTest {
 		Assertions.assertThat(statusService).isNotNull();
 	}
 
+	public String getEndpoint() {
+		return null;
+	}
+
 }

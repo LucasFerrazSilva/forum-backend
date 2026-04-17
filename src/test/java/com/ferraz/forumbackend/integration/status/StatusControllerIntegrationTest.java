@@ -14,16 +14,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class StatusControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ENDPOINT = "/api/v1/status";
+    public String getEndpoint() {
+        return "/api/v1/status";
+    }
 
     @Test
     @DisplayName("Deve retornar 200 quando fizer um GET no endpoint '/api/v1/status'")
     void shouldReturn200WhenStatusEndpointIsCalled() throws Exception {
-        MockHttpServletResponse response = get(ENDPOINT);
+        MockHttpServletResponse response = GET().send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 
-        StatusDTO statusDTO = objectMapper.readValue(response.getContentAsString(), StatusDTO.class);
+        StatusDTO statusDTO = extractObject(response, StatusDTO.class);
 
         assertThat(statusDTO).isNotNull();
         assertThat(statusDTO.updatedAt()).isBefore(LocalDateTime.now());
@@ -36,11 +38,11 @@ class StatusControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 405 quando fizer um POST no endpoint '/api/v1/status'")
     void shouldReturn405WhenPostStatusEndpointIsCalled() throws Exception {
-        MockHttpServletResponse response = post(ENDPOINT, "");
+        MockHttpServletResponse response = POST().send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED.value());
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
 
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED.value());

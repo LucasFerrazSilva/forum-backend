@@ -3,7 +3,6 @@ package com.ferraz.forumbackend.integration.user;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.infra.exception.InvalidField;
 import com.ferraz.forumbackend.integration.AbstractIntegrationTest;
-import com.ferraz.forumbackend.integration.session.SessionControllerIntegrationTest;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionRepository;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
@@ -29,7 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ENDPOINT = "/api/v1/users";
+    public String getEndpoint() {
+        return "/api/v1/users";
+    }
 
     @Autowired
     private UserRepository userRepository;
@@ -50,15 +51,14 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 201 (Created) quando fizer um POST no endpoint '/api/v1/users'")
     void shouldReturn201WhenUsersEndpointIsCalledWithPost() throws Exception {
         NewUserDTO newUserDTO = userFixture.newUserDTO();
-        String requestBody = objectMapper.writeValueAsString(newUserDTO);
 
-        MockHttpServletResponse response = post(ENDPOINT, requestBody);
+        MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
 
         assertThat(response.getContentAsString()).isNotBlank();
 
-        UserDTO userDTO = objectMapper.readValue(response.getContentAsString(), UserDTO.class );
+        UserDTO userDTO = extractObject(response, UserDTO.class );
         assertThat(userDTO).isNotNull();
         assertThat(userDTO.id()).isNotNull();
         assertThat(userDTO.username()).isEqualTo(newUserDTO.username());
@@ -76,10 +76,11 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' sem enviar o body")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithoutBody() throws Exception {
-        MockHttpServletResponse response = post(ENDPOINT, "");
+        MockHttpServletResponse response = POST().send();
+
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
     }
 
@@ -89,15 +90,13 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         NewUserDTO newUserDTO =
                 userFixture.newUserDTO(u -> u.username("").email(" ").password(null));
 
-        String requestBody = objectMapper.writeValueAsString(newUserDTO);
-
-        MockHttpServletResponse response = post(ENDPOINT, requestBody);
+        MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         List<String> invalidFieldNames =
                 errorResponse.getInvalidFields().stream().map(InvalidField::field).toList();
@@ -113,14 +112,12 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         NewUserDTO newUserDTO =
                 userFixture.newUserDTO(u -> u.email(existingUser.getEmail().toLowerCase()));
 
-        String requestBody = objectMapper.writeValueAsString(newUserDTO);
-
-        MockHttpServletResponse response = post(ENDPOINT, requestBody);
+        MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("email");
@@ -137,14 +134,12 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         NewUserDTO newUserDTO =
                 userFixture.newUserDTO(u -> u.username(existingUser.getUsername().toLowerCase()));
 
-        String requestBody = objectMapper.writeValueAsString(newUserDTO);
-
-        MockHttpServletResponse response = post(ENDPOINT, requestBody);
+        MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
@@ -157,11 +152,12 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     void shouldReturn200WhenUsersEndpointIsCalledWithGetAndValidUsername() throws Exception {
         UserEntity user = userFixture.user();
 
-        MockHttpServletResponse response = get(ENDPOINT + "/" + user.getUsername());
+        MockHttpServletResponse response = GET().withEndpoint(getEndpoint() + "/" + user.getUsername()).send();
+
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        UserDTO userDTO = objectMapper.readValue(response.getContentAsString(), UserDTO.class );
+        UserDTO userDTO = extractObject(response, UserDTO.class );
         assertThat(userDTO).isNotNull();
         assertThat(userDTO.id()).isNotNull();
         assertThat(userDTO.username()).isEqualTo(user.getUsername());
@@ -175,11 +171,12 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     void shouldReturn404WhenUsersEndpointIsCalledWithGetAndInvalidUsername() throws Exception {
         String invalidUsername = "invalidUsername";
 
-        MockHttpServletResponse response = get(ENDPOINT + "/" + invalidUsername);
+        MockHttpServletResponse response = GET().withEndpoint(getEndpoint() + "/" + invalidUsername).send();
+
         assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
         assertThat(errorResponse.getMessage()).isEqualTo("Nenhum usuário encontrado para o username " + invalidUsername);
@@ -189,16 +186,16 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 404 (Not Found) quando fizer um PATCH no endpoint '/api/v1/users/{username}' passando um username inexistente")
     void shouldReturn404WhenUsersEndpointIsCalledWithPatchAndInvalidUsername() throws Exception {
         UserEntity userEntity = userFixture.user();
-        String requestBody = objectMapper.writeValueAsString(userEntity);
 
         String invalidUsername = "invalidUsername";
 
-        MockHttpServletResponse response = patch(ENDPOINT + "/" + invalidUsername, requestBody);
+        MockHttpServletResponse response =
+                PATCH().withEndpoint(getEndpoint() + "/" + invalidUsername).withRequestBody(userEntity).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
         assertThat(errorResponse.getMessage()).isEqualTo("Nenhum usuário encontrado para o username " + invalidUsername);
@@ -211,14 +208,14 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         UserEntity userBeeingUpdated = userFixture.user();
 
         UpdateUserDTO updateUserDTO = userFixture.updateUserDTO(b -> b.username(existingUser.getUsername()));
-        String requestBody = objectMapper.writeValueAsString(updateUserDTO);
 
-        MockHttpServletResponse response = patch(ENDPOINT + "/" + userBeeingUpdated.getUsername(), requestBody);
+        MockHttpServletResponse response =
+                PATCH().withEndpoint(getEndpoint() + "/" + userBeeingUpdated.getUsername()).withRequestBody(updateUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
@@ -233,14 +230,14 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         UserEntity userBeeingUpdated = userFixture.user();
 
         UpdateUserDTO updateUserDTO = userFixture.updateUserDTO(b -> b.email(existingUser.getEmail()));
-        String requestBody = objectMapper.writeValueAsString(updateUserDTO);
 
-        MockHttpServletResponse response = patch(ENDPOINT + "/" + userBeeingUpdated.getUsername(), requestBody);
+        MockHttpServletResponse response =
+                PATCH().withEndpoint(getEndpoint() + "/" + userBeeingUpdated.getUsername()).withRequestBody(updateUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getInvalidFields()).isNotEmpty();
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("email");
@@ -261,15 +258,15 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             b.email("NovoEmail@mail.com");
             b.password("NovaSenha");
         });
-        String requestBody = objectMapper.writeValueAsString(updateUserDTO);
 
-        MockHttpServletResponse response = patch(ENDPOINT + "/" + user.getUsername(), requestBody);
+        MockHttpServletResponse response =
+                PATCH().withEndpoint(getEndpoint() + "/" + user.getUsername()).withRequestBody(updateUserDTO).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 
         assertThat(response.getContentAsString()).isNotBlank();
 
-        UserDTO userDTO = objectMapper.readValue(response.getContentAsString(), UserDTO.class );
+        UserDTO userDTO = extractObject(response, UserDTO.class );
         assertThat(userDTO).isNotNull();
         assertThat(userDTO.id()).isEqualTo(user.getId());
         assertThat(userDTO.username()).isEqualTo(updateUserDTO.username());
@@ -288,12 +285,12 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um GET no endpoint '/api/v1/users/' sem enviar o cookie de sessão")
     void shouldReturn401WhenUsersEndpointIsCalledWithGetAndNoSessionCookie() throws Exception {
-        MockHttpServletResponse response = get(ENDPOINT);
+        MockHttpServletResponse response = GET().send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(errorResponse.getName()).isEqualTo("UnauthorizedException");
@@ -310,23 +307,19 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         UserEntity user = userFixture.user(b -> b.password(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
-        // buscar session
-        String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(SessionControllerIntegrationTest.ENDPOINT, requestBody);
-        List<Cookie> cookies = List.of(response.getCookies());
-        Cookie sessionCookie = cookies.getFirst();
+        Cookie sessionCookie = sessionFixture.cookie(loginDTO);
 
         // atualizar expiracao da session do usuario
         SessionEntity sessionEntity = sessionRepository.findFirstByUser(user).get();
         sessionEntity.setExpiresAt(LocalDateTime.now().minusDays(1));
         sessionRepository.save(sessionEntity);
 
-        response = get(ENDPOINT, sessionCookie);
+        MockHttpServletResponse response = GET().withSessionCookie(sessionCookie).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(errorResponse.getName()).isEqualTo("UnauthorizedException");
@@ -338,29 +331,15 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um GET no endpoint '/api/v1/users/' enviando cookie de sessão invalido")
     void shouldReturn401WhenUsersEndpointIsCalledWithGetAndInvalidSessionCookie() throws Exception {
-        // criar usuario, pegar loginDTO
-        String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida));
-        LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
-
-        // buscar session
-        String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(SessionControllerIntegrationTest.ENDPOINT, requestBody);
-        List<Cookie> cookies = List.of(response.getCookies());
-        Cookie sessionCookie = cookies.getFirst();
+        Cookie sessionCookie = sessionFixture.cookie();
         sessionCookie.setValue("Invalid value");
 
-        // atualizar expiracao da session do usuario
-        SessionEntity sessionEntity = sessionRepository.findFirstByUser(user).get();
-        sessionEntity.setExpiresAt(LocalDateTime.now().minusDays(1));
-        sessionRepository.save(sessionEntity);
-
-        response = get(ENDPOINT, sessionCookie);
+        MockHttpServletResponse response = GET().withSessionCookie(sessionCookie).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(errorResponse.getName()).isEqualTo("UnauthorizedException");
@@ -372,27 +351,22 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 200 (Ok) quando fizer um GET no endpoint '/api/v1/users' com um cookie de sessão válido")
     void shouldReturn200WhenUsersEndpointIsCalledWithGetAndValidSessionCookie() throws Exception {
-        // criar usuario, pegar loginDTO
         String senhaValida = "SenhaValida";
         UserEntity user = userFixture.user(b -> b.password(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
-        // buscar session
-        String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(SessionControllerIntegrationTest.ENDPOINT, requestBody);
-        List<Cookie> cookies = List.of(response.getCookies());
-        Cookie sessionCookie = cookies.getFirst();
+        Cookie sessionCookie = sessionFixture.cookie(loginDTO);
 
         // Buscar sessão
         SessionEntity sessionEntity = sessionRepository.findFirstByUser(user).get();
         LocalDateTime previousExpiresAt = sessionEntity.getExpiresAt();
 
-        response = get(ENDPOINT, sessionCookie);
+        MockHttpServletResponse response = GET().withSessionCookie(sessionCookie).send();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(response.getContentAsString()).isNotBlank();
 
-        UserDTO userDTO = objectMapper.readValue(response.getContentAsString(), UserDTO.class );
+        UserDTO userDTO = extractObject(response, UserDTO.class );
         assertThat(userDTO).isNotNull();
         assertThat(userDTO.id()).isEqualTo(user.getId());
         assertThat(userDTO.username()).isEqualTo(user.getUsername());

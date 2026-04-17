@@ -36,7 +36,7 @@ public class SessionController {
         SessionDTO sessionDTO = new SessionDTO(sessionEntity.getToken());
 
         long maxAge = Duration.between(LocalDateTime.now(), sessionEntity.getExpiresAt()).getSeconds();
-        Cookie cookie = createCookie(sessionEntity.getToken(), (int) maxAge);
+        Cookie cookie = createCookie(cookieName, cookieSecure, sessionEntity.getToken(), (int) maxAge);
         response.addCookie(cookie);
 
         return ResponseEntity.status(HttpStatus.CREATED.value()).body(sessionDTO);
@@ -57,13 +57,13 @@ public class SessionController {
 
         SessionEntity sessionEntity = sessionService.inactivate(sessionCookie.getValue());
 
-        Cookie cookie = createCookie(sessionEntity.getToken(), 0);
+        Cookie cookie = createCookie(cookieName, cookieSecure, sessionEntity.getToken(), 0);
         response.addCookie(cookie);
 
         return ResponseEntity.noContent().build();
     }
 
-    private Cookie createCookie(String token, int maxAge) {
+    public static Cookie createCookie(String cookieName, boolean cookieSecure, String token, int maxAge) {
         Cookie cookie = new Cookie(cookieName, token);
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
