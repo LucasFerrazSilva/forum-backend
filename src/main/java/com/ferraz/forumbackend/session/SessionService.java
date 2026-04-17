@@ -15,8 +15,6 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HexFormat;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -60,4 +58,11 @@ public class SessionService {
         return sessionEntity;
     }
 
+    @Transactional
+    public SessionEntity inactivate(String token) {
+        SessionEntity sessionEntity = sessionRepository.findFirstByToken(token).orElseThrow(UnauthorizedException::new);
+        sessionEntity.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+        sessionRepository.save(sessionEntity);
+        return sessionEntity;
+    }
 }

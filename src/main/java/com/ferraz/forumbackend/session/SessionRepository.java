@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface SessionRepository extends JpaRepository<SessionEntity, UUID> {
 
+    Optional<SessionEntity> findFirstByToken(String token);
     Optional<SessionEntity> findFirstByTokenAndExpiresAtAfter(String token, LocalDateTime now);
     Optional<SessionEntity> findFirstByUser(UserEntity user);
 

@@ -54,7 +54,7 @@ public abstract class AbstractIntegrationTest {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
-
+    // GET
     public MockHttpServletResponse get(String endpoint) throws Exception {
         return get(endpoint, false);
     }
@@ -83,6 +83,12 @@ public abstract class AbstractIntegrationTest {
 
     public MockHttpServletResponse get(String endpoint, Cookie sessionCookie) throws Exception {
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get(endpoint);
+        return perform(requestBuilder, sessionCookie);
+    }
+
+    // DELETE
+    public MockHttpServletResponse delete(String endpoint, Cookie sessionCookie) throws Exception {
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete(endpoint);
         return perform(requestBuilder, sessionCookie);
     }
 

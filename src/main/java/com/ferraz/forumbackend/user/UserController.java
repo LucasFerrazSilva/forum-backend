@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.stream.Stream;
+
 @RestController
 @RequestMapping("api/v1/users")
 @RequiredArgsConstructor
@@ -57,16 +59,10 @@ public class UserController {
             throw new UnauthorizedException();
         }
 
-        Cookie sessionCookie = null;
-        for (Cookie cookie : cookies) {
-            if (cookieName.equals(cookie.getName())) {
-                sessionCookie = cookie;
-            }
-        }
-
-        if (sessionCookie == null) {
-            throw new UnauthorizedException();
-        }
+        Cookie sessionCookie =
+                Stream.of(cookies)
+                        .filter(cookie -> cookieName.equals(cookie.getName())).findAny()
+                        .orElseThrow(UnauthorizedException::new);
 
         SessionEntity session = sessionService.getSession(sessionCookie.getValue());
         UserEntity userEntity = session.getUser();
