@@ -1,10 +1,17 @@
 package com.ferraz.forumbackend.user;
 
+import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
+import com.ferraz.forumbackend.session.SessionEntity;
+import com.ferraz.forumbackend.session.SessionService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +21,12 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
+    @Value("${server.cookie.name}")
+    private String cookieName;
+
     private final UserService userService;
+
+    private final SessionService sessionService;
 
     @PostMapping
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
@@ -37,5 +49,30 @@ public class UserController {
         return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
     }
 
+    @GetMapping
+    public ResponseEntity<UserDTO> findBySessionId(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null || cookies.length == 0) {
+            throw new UnauthorizedException();
+        }
+
+        Cookie sessionCookie = null;
+        for (Cookie cookie : cookies) {
+            if (cookieName.equals(cookie.getName())) {
+                sessionCookie = cookie;
+            }
+        }
+
+        if (sessionCookie == null) {
+            throw new UnauthorizedException();
+        }
+
+        SessionEntity session = sessionService.getSession(sessionCookie.getValue());
+        UserEntity userEntity = session.getUser();
+
+        UserDTO userDTO = UserMapper.toDTO(userEntity);
+        return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
+    }
 
 }

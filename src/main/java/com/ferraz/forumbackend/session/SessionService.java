@@ -1,9 +1,11 @@
 package com.ferraz.forumbackend.session;
 
+import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.exception.InvalidCredentialsException;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +16,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +46,18 @@ public class SessionService {
 
         SessionEntity sessionEntity = SessionEntity.create(user, token, expiresAt);
         return sessionRepository.save(sessionEntity);
+    }
+
+    @Transactional
+    public SessionEntity getSession(String token) {
+        SessionEntity sessionEntity =
+                sessionRepository.findFirstByTokenAndExpiresAtAfter(token, LocalDateTime.now())
+                        .orElseThrow(UnauthorizedException::new);
+
+        sessionEntity.setExpiresAt(LocalDateTime.now().plusDays(getSessionExpirationDays()));
+        sessionRepository.save(sessionEntity);
+
+        return sessionEntity;
     }
 
 }

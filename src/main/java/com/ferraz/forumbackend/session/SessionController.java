@@ -27,12 +27,15 @@ public class SessionController {
     @Value("${server.cookie.secure}")
     private boolean cookieSecure;
 
+    @Value("${server.cookie.name}")
+    private String cookieName;
+
     @PostMapping
     public ResponseEntity<SessionDTO> getSession(@Valid @RequestBody LoginDTO loginDTO, HttpServletResponse response) {
         SessionEntity sessionEntity = sessionService.getSession(loginDTO);
         SessionDTO sessionDTO = new SessionDTO(sessionEntity.getToken());
 
-        Cookie cookie = new Cookie("session_id", sessionEntity.getToken());
+        Cookie cookie = new Cookie(cookieName, sessionEntity.getToken());
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
         cookie.setPath("/");

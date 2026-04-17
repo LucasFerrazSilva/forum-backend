@@ -21,21 +21,15 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static com.ferraz.forumbackend.integration.util.MvcUtil.post;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SessionControllerIntegrationTest extends AbstractIntegrationTest {
+public class SessionControllerIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ENDPOINT = "/api/v1/sessions";
-
-    @Autowired
-    private MockMvc mvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    public static final String ENDPOINT = "/api/v1/sessions";
 
     @Autowired
     private UserRepository userRepository;
@@ -45,9 +39,6 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SessionService sessionService;
-
-    @Autowired
-    private UserFixture userFixture;
 
     @AfterEach
     void afterEach() {
@@ -75,7 +66,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
 
     private void badRequestTest(LoginDTO loginDTO, String invalidField) throws Exception {
         String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
+        MockHttpServletResponse response = post(ENDPOINT, requestBody);
         assertThat(response.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.getContentAsString()).isNotBlank();
         ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
@@ -91,7 +82,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
         userFixture.user(b -> b.password(senhaValida));
         LoginDTO loginDTO = new LoginDTO("EmailIncorreto@mail.com", senhaValida);
         String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
+        MockHttpServletResponse response = post(ENDPOINT, requestBody);
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(response.getContentAsString()).isNotBlank();
         ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
@@ -105,7 +96,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
         UserEntity user = userFixture.user();
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), "SenhaIncorreta");
         String requestBody = objectMapper.writeValueAsString(loginDTO);
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
+        MockHttpServletResponse response = post(ENDPOINT, requestBody);
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(response.getContentAsString()).isNotBlank();
         ErrorResponse errorResponse = objectMapper.readValue(response.getContentAsString(), ErrorResponse.class);
@@ -121,7 +112,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
         String requestBody = objectMapper.writeValueAsString(loginDTO);
 
-        MockHttpServletResponse response = post(mvc, ENDPOINT, requestBody);
+        MockHttpServletResponse response = post(ENDPOINT, requestBody);
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
         assertThat(response.getContentAsString()).isNotBlank();
@@ -137,7 +128,8 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(sessionCookie.getPath()).isEqualTo("/");
         assertThat(sessionCookie.isHttpOnly()).isTrue();
 
-        Optional<SessionEntity> sessionOptional = sessionRepository.findFirstByToken(sessionDTO.sessionId());
+        Optional<SessionEntity> sessionOptional =
+                sessionRepository.findFirstByTokenAndExpiresAtAfter(sessionDTO.sessionId(), LocalDateTime.now());
         assertThat(sessionOptional).isPresent();
         SessionEntity sessionEntity = sessionOptional.get();
         assertThat(sessionEntity.getUser()).isEqualTo(user);

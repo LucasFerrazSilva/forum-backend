@@ -41,5 +41,6 @@ security:
 
 server:
   cookie:
+    name: session_id
     secure: ${COOKIE_SECURE:false}
     expiration-days: 30
