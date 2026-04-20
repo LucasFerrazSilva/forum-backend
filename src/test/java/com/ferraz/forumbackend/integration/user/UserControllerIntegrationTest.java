@@ -349,6 +349,36 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um GET no endpoint '/api/v1/users/' enviando cookie inativado")
+    void shouldReturn401WhenUsersEndpointIsCalledWithGetAndInvalidatedSessionCookie() throws Exception {
+        String senhaValida = "SenhaValida";
+        UserEntity user = userFixture.user(b -> b.password(senhaValida));
+        LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
+
+        Cookie sessionCookie = sessionFixture.cookie(loginDTO);
+
+        DELETE().withEndpoint("/api/v1/sessions").withSessionCookie(sessionCookie).send();
+        MockHttpServletResponse response = GET().withSessionCookie(sessionCookie).send();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(response.getContentAsString()).isNotBlank();
+
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(errorResponse.getName()).isEqualTo("UnauthorizedException");
+        assertThat(errorResponse.getMessage()).isEqualTo("Cookie de sessão não enviado ou inválido");
+        assertThat(errorResponse.getAction()).isEqualTo("Verifique se um cookie válido de sessão está sendo enviado no cabeçalho da requisição");
+        assertThat(errorResponse.getInvalidFields()).isNull();
+
+        List<Cookie>  cookies = List.of(response.getCookies());
+        assertThat(cookies).hasSize(1);
+        Cookie newSessionCookie = cookies.getFirst();
+        assertThat(newSessionCookie.getName()).isEqualTo(cookieName);
+        assertThat(newSessionCookie.getMaxAge()).isZero();
+    }
+
+    @Test
     @DisplayName("Deve retornar 200 (Ok) quando fizer um GET no endpoint '/api/v1/users' com um cookie de sessão válido")
     void shouldReturn200WhenUsersEndpointIsCalledWithGetAndValidSessionCookie() throws Exception {
         String senhaValida = "SenhaValida";
