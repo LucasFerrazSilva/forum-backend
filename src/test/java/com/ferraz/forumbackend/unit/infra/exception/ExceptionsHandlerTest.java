@@ -1,5 +1,6 @@
 package com.ferraz.forumbackend.unit.infra.exception;
 
+import com.ferraz.forumbackend.infra.CookieService;
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.infra.exception.ExceptionsHandler;
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ExceptionsHandlerTest {
 
-    final ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
+    final ExceptionsHandler exceptionsHandler = new ExceptionsHandler(new CookieService());
 
     @Test
     void shouldBuildErrorResponseCorrectlyWhenHandlingDatabaseException() {

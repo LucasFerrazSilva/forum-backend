@@ -1,5 +1,8 @@
 package com.ferraz.forumbackend.infra.exception;
 
+import com.ferraz.forumbackend.infra.CookieService;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -15,12 +18,21 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.List;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class ExceptionsHandler {
+
+    private final CookieService cookieService;
 
     private static final Logger logger = LoggerFactory.getLogger(ExceptionsHandler.class);
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException ex) {
+        return handleException(ex);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex, HttpServletResponse response) {
+        response.addCookie(cookieService.createExpiredSessionCookie());
         return handleException(ex);
     }
 

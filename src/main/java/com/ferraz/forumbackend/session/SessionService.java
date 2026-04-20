@@ -63,6 +63,7 @@ public class SessionService {
     public SessionEntity inactivate(String token) {
         SessionEntity sessionEntity = sessionRepository.findFirstByToken(token).orElseThrow(UnauthorizedException::new);
         sessionEntity.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+        sessionEntity.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(sessionEntity);
         return sessionEntity;
     }

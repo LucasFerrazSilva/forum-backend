@@ -37,6 +37,16 @@ public class CookieService {
         return cookie;
     }
 
+    public Cookie createExpiredSessionCookie() {
+        Cookie cookie = new Cookie(cookieName, "invalid");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+
+        return cookie;
+    }
+
     public Cookie getSessionCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
 

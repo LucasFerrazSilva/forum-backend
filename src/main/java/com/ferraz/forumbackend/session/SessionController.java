@@ -35,12 +35,8 @@ public class SessionController {
     @DeleteMapping
     public ResponseEntity<Void> deleteSession(HttpServletRequest request, HttpServletResponse response) {
         Cookie sessionCookie = cookieService.getSessionCookie(request);
-
-        SessionEntity sessionEntity = sessionService.inactivate(sessionCookie.getValue());
-
-        Cookie cookie = cookieService.createSessionCookie(sessionEntity);
-        response.addCookie(cookie);
-
+        sessionService.inactivate(sessionCookie.getValue());
+        response.addCookie(cookieService.createExpiredSessionCookie());
         return ResponseEntity.noContent().build();
     }
 

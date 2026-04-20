@@ -168,12 +168,11 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
         List<Cookie>  cookies = List.of(response.getCookies());
         assertThat(cookies).hasSize(1);
         Cookie newSessionCookie = cookies.getFirst();
-        assertThat(newSessionCookie.getValue()).isEqualTo(sessionCookie.getValue());
         assertThat(newSessionCookie.getName()).isEqualTo(cookieName);
         assertThat(newSessionCookie.getMaxAge()).isZero();
 
         Optional<SessionEntity> sessionOptional =
-                sessionRepository.findFirstByTokenAndExpiresAtAfter(newSessionCookie.getValue(), LocalDateTime.now());
+                sessionRepository.findFirstByTokenAndExpiresAtAfter(sessionCookie.getValue(), LocalDateTime.now());
         assertThat(sessionOptional).isEmpty();
     }
 
