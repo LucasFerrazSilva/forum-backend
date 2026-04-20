@@ -53,6 +53,7 @@ public class SessionService {
                         .orElseThrow(UnauthorizedException::new);
 
         sessionEntity.setExpiresAt(LocalDateTime.now().plusDays(getSessionExpirationDays()));
+        sessionEntity.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(sessionEntity);
 
         return sessionEntity;

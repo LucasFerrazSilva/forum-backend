@@ -1,6 +1,6 @@
 package com.ferraz.forumbackend.user;
 
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
+import com.ferraz.forumbackend.infra.CookieService;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
@@ -11,23 +11,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
-    @Value("${server.cookie.name}")
-    private String cookieName;
-
+    private final CookieService cookieService;
     private final UserService userService;
-
     private final SessionService sessionService;
 
     @PostMapping
@@ -52,20 +46,14 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<UserDTO> findBySessionId(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies == null || cookies.length == 0) {
-            throw new UnauthorizedException();
-        }
-
-        Cookie sessionCookie =
-                Stream.of(cookies)
-                        .filter(cookie -> cookieName.equals(cookie.getName())).findAny()
-                        .orElseThrow(UnauthorizedException::new);
+    public ResponseEntity<UserDTO> findBySessionId(HttpServletRequest request, HttpServletResponse response) {
+        Cookie sessionCookie = cookieService.getSessionCookie(request);
 
         SessionEntity session = sessionService.getSession(sessionCookie.getValue());
         UserEntity userEntity = session.getUser();
+
+        Cookie cookie = cookieService.createSessionCookie(session);
+        response.addCookie(cookie);
 
         UserDTO userDTO = UserMapper.toDTO(userEntity);
         return  ResponseEntity.status(HttpStatus.OK).body(userDTO);

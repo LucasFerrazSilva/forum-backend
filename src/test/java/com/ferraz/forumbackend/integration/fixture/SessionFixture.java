@@ -1,5 +1,6 @@
 package com.ferraz.forumbackend.integration.fixture;
 
+import com.ferraz.forumbackend.infra.CookieService;
 import com.ferraz.forumbackend.session.SessionController;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionService;
@@ -17,14 +18,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class SessionFixture {
 
-    @Value("${server.cookie.secure}")
-    private boolean cookieSecure;
-
-    @Value("${server.cookie.name}")
-    private String cookieName;
-
     private final SessionService sessionService;
     private final UserFixture userFixture;
+    private final CookieService cookieService;
 
     public SessionEntity session() {
         return session(null);
@@ -46,8 +42,7 @@ public class SessionFixture {
 
     public Cookie cookie(LoginDTO loginDTO) {
         SessionEntity sessionEntity = session(loginDTO);
-        long maxAge = Duration.between(LocalDateTime.now(), sessionEntity.getExpiresAt()).getSeconds();
-        return SessionController.createCookie(cookieName, cookieSecure, sessionEntity.getToken(), (int) maxAge);
+        return cookieService.createSessionCookie(sessionEntity);
     }
 
 }

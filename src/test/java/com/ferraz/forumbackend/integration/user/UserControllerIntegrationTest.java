@@ -356,10 +356,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
         Cookie sessionCookie = sessionFixture.cookie(loginDTO);
+        sessionCookie.setMaxAge(sessionCookie.getMaxAge() - 1); // simula que passou um segundo
 
-        // Buscar sessão
-        SessionEntity sessionEntity = sessionRepository.findFirstByUser(user).get();
-        LocalDateTime previousExpiresAt = sessionEntity.getExpiresAt();
+        SessionEntity previousSessionEntity = sessionRepository.findFirstByUser(user).get();
 
         MockHttpServletResponse response = GET().withSessionCookie(sessionCookie).send();
 
@@ -374,9 +373,17 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.createdAt()).isNotNull();
         assertThat(userDTO.updatedAt()).isNotNull();
 
-        sessionEntity = sessionRepository.findFirstByUser(user).get();
-        LocalDateTime actualExpiresAt = sessionEntity.getExpiresAt();
-        assertThat(actualExpiresAt).isAfter(previousExpiresAt);
+        SessionEntity sessionEntity = sessionRepository.findFirstByUser(user).get();
+        assertThat(sessionEntity.getToken()).isEqualTo(previousSessionEntity.getToken());
+        assertThat(sessionEntity.getExpiresAt()).isAfter(previousSessionEntity.getExpiresAt());
+        assertThat(sessionEntity.getUpdatedAt()).isAfter(previousSessionEntity.getUpdatedAt());
+
+        List<Cookie>  cookies = List.of(response.getCookies());
+        assertThat(cookies).hasSize(1);
+        Cookie newSessionCookie = cookies.getFirst();
+        assertThat(newSessionCookie.getValue()).isEqualTo(sessionCookie.getValue());
+        assertThat(newSessionCookie.getName()).isEqualTo(cookieName);
+        assertThat(newSessionCookie.getMaxAge()).isGreaterThan(sessionCookie.getMaxAge());
     }
 
 }
