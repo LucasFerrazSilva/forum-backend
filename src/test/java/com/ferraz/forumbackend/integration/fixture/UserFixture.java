@@ -32,7 +32,7 @@ public class UserFixture {
         NewUserDTOBuilder newUserDTOBuilder = new NewUserDTOBuilder();
         customizer.accept(newUserDTOBuilder);
         NewUserDTO user = newUserDTOBuilder.build();
-        return userService.insert(user);
+        return userService.insert(user, false);
     }
 
     public NewUserDTO newUserDTO() {

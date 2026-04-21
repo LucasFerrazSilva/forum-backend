@@ -7,9 +7,11 @@ import com.ferraz.forumbackend.integration.fixture.UserFixture;
 import com.ferraz.forumbackend.integration.util.HttpMethod;
 import com.ferraz.forumbackend.integration.util.MvcRequestBuilder;
 import com.ferraz.forumbackend.integration.util.TestcontainersConfig;
-import com.ferraz.forumbackend.status.entity.StatusDTO;
+import com.ferraz.forumbackend.integration.util.TestcontainersInitializer;
+import com.icegreen.greenmail.util.GreenMail;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,16 +20,18 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.io.UnsupportedEncodingException;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(TestcontainersConfig.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@ContextConfiguration(initializers = TestcontainersInitializer.class)
 public abstract class AbstractIntegrationTest {
+
+    protected final GreenMail greenMail = TestcontainersConfig.GREEN_MAIL;
 
     @Autowired
     private Flyway flyway;
@@ -46,11 +50,9 @@ public abstract class AbstractIntegrationTest {
 
     protected ObjectMapper objectMapper;
 
-
     public AbstractIntegrationTest() {
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     }
-
 
     @BeforeAll
     void resetDatabase() {
@@ -58,9 +60,12 @@ public abstract class AbstractIntegrationTest {
         flyway.migrate();
     }
 
+    @BeforeEach
+    void resetEmails() throws Exception {
+        greenMail.purgeEmailFromAllMailboxes();
+    }
 
     public abstract String getEndpoint();
-
 
     public MvcRequestBuilder GET() {
         return createMvcRequestBuilder(HttpMethod.GET);
@@ -87,4 +92,3 @@ public abstract class AbstractIntegrationTest {
     }
 
 }
-
