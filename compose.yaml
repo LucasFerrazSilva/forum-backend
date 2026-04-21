@@ -11,6 +11,13 @@ services:
       - postgres_forum_data:/var/lib/postgresql/data
     networks:
       - forum-net
+  mailcatcher:
+    image: 'sj26/mailcatcher:v0.10.0'
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+    networks:
+      - forum-net
 
 volumes:
   postgres_forum_data:

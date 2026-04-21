@@ -64,6 +64,12 @@ jobs:
       IMAGE_NAME: forum-backend
       APP_VERSION: ${{ needs.push_to_registry.outputs.app_version }}
       PASSWORD_PEPPER: ${{ secrets.PASSWORD_PEPPER }}
+      MAIL_HOST: ${{ secrets.MAIL_HOST }}
+      MAIL_PORT: ${{ secrets.MAIL_PORT }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_AUTH: ${{ secrets.MAIL_AUTH }}
+      MAIL_TLS: ${{ secrets.MAIL_TLS }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -86,7 +92,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION,PASSWORD_PEPPER
+          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION,PASSWORD_PEPPER,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,MAIL_AUTH,MAIL_TLS
           script: |
             set -e
 
@@ -94,6 +100,12 @@ jobs:
       
             kubectl create secret generic security \
             --from-literal=PASSWORD_PEPPER="$PASSWORD_PEPPER" \
+            --from-literal=MAIL_HOST="$MAIL_HOST" \
+            --from-literal=MAIL_PORT="$MAIL_PORT" \
+            --from-literal=MAIL_USERNAME="$MAIL_USERNAME" \
+            --from-literal=MAIL_PASSWORD="$MAIL_PASSWORD" \
+            --from-literal=MAIL_AUTH="$MAIL_AUTH" \
+            --from-literal=MAIL_TLS="$MAIL_TLS" \
             -n forum \
             --dry-run=client -o yaml | kubectl apply -f -
 

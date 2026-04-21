@@ -1,5 +1,8 @@
 package com.ferraz.forumbackend.integration.util;
 
+import com.icegreen.greenmail.configuration.GreenMailConfiguration;
+import com.icegreen.greenmail.util.GreenMail;
+import com.icegreen.greenmail.util.ServerSetup;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -12,8 +15,13 @@ public class TestcontainersConfig {
             new PostgreSQLContainer<>("postgres:17")
                     .withReuse(true);
 
+    public static final GreenMail GREEN_MAIL =
+            new GreenMail(new ServerSetup(0, "localhost", ServerSetup.PROTOCOL_SMTP))
+                    .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication());
+
     static {
         POSTGRES.start();
+        GREEN_MAIL.start();
     }
 
     @Bean
@@ -21,4 +29,10 @@ public class TestcontainersConfig {
     PostgreSQLContainer<?> postgresContainer() {
         return POSTGRES;
     }
+
+    @Bean
+    GreenMail greenMail() {
+        return GREEN_MAIL;
+    }
+
 }

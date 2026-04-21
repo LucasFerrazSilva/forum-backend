@@ -1,6 +1,6 @@
 package com.ferraz.forumbackend.user;
 
-import com.ferraz.forumbackend.infra.exception.NotFoundException;
+import com.ferraz.forumbackend.infra.EmailService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.exception.UsernameNotFoundException;
@@ -10,7 +10,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,12 +24,22 @@ public class UserService {
     private final List<InsertUserValidator> insertUserValidators;
     private final List<UpdateUserValidator> updateUserValidators;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+
+    public UserEntity insert(NewUserDTO newUserDTO) {
+        return this.insert(newUserDTO, true);
+    }
 
     @Transactional
-    public UserEntity insert(NewUserDTO newUserDTO) {
+    public UserEntity insert(NewUserDTO newUserDTO, boolean sendEmail) {
         insertUserValidators.forEach(validator -> validator.validate(newUserDTO));
         UserEntity userEntity = UserMapper.toEntity(newUserDTO, passwordEncoder);
-        return userRepository.save(userEntity);
+        UserEntity user = userRepository.save(userEntity);
+
+        if (sendEmail) {
+            emailService.send(user.getEmail(), "Usuário criado", "Usuário criado com sucesso.");
+        }
+        return user;
     }
 
     public UserEntity findByUsername(String username) {

@@ -11,6 +11,7 @@ import com.ferraz.forumbackend.user.UserRepository;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +72,13 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         UserEntity userEntity = userEntityOptional.get();
         assertThat(passwordEncoder.matches(newUserDTO.password(), userEntity.getPassword())).isTrue();
         assertThat(passwordEncoder.matches("SenhaInvalida", userEntity.getPassword())).isFalse();
+
+        boolean emailReceived = greenMail.waitForIncomingEmail(5000, 1);
+        assertThat(emailReceived).isTrue();
+        MimeMessage[] messages = greenMail.getReceivedMessages();
+        assertThat(messages).hasSize(1);
+        assertThat(messages[0].getAllRecipients()[0].toString()).isEqualTo(newUserDTO.email());
+        assertThat(messages[0].getSubject()).isEqualTo("Usuário criado");
     }
 
     @Test

@@ -55,5 +55,35 @@ spec:
                 secretKeyRef:
                   name: security
                   key: PASSWORD_PEPPER
+            - name: MAIL_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_HOST
+            - name: MAIL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_PORT
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_PASSWORD
+            - name: MAIL_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_AUTH
+            - name: MAIL_TLS
+              valueFrom:
+                secretKeyRef:
+                  name: security
+                  key: MAIL_TLS
             - name: COOKIE_SECURE
               value: "true"

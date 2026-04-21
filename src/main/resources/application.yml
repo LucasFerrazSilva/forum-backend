@@ -32,11 +32,23 @@ spring:
       poll-interval: 2000
       quiet-period: 1000
 
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_AUTH:false}
+          starttls:
+            enable: ${MAIL_TLS:false}
+
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,https://ff.lucasferraz.cloud}
 
 security:
-  pepper: ${PASSWORD_PEPPER}
+  pepper: ${PASSWORD_PEPPER:PASSWORD_PEPPER}
   rounds: ${PASSWORD_ROUNDS:14}
 
 server:
