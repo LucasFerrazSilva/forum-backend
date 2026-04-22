@@ -9,6 +9,7 @@ spring:
   mail:
     host: localhost
     port: 1025
+    username: contato@forum.com
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,https://ff.lucasferraz.cloud}

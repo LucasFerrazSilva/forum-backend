@@ -1,6 +1,5 @@
 package com.ferraz.forumbackend.user;
 
-import com.ferraz.forumbackend.infra.EmailService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.exception.UsernameNotFoundException;
@@ -24,22 +23,12 @@ public class UserService {
     private final List<InsertUserValidator> insertUserValidators;
     private final List<UpdateUserValidator> updateUserValidators;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
-
-    public UserEntity insert(NewUserDTO newUserDTO) {
-        return this.insert(newUserDTO, true);
-    }
 
     @Transactional
-    public UserEntity insert(NewUserDTO newUserDTO, boolean sendEmail) {
+    public UserEntity insert(NewUserDTO newUserDTO) {
         insertUserValidators.forEach(validator -> validator.validate(newUserDTO));
         UserEntity userEntity = UserMapper.toEntity(newUserDTO, passwordEncoder);
-        UserEntity user = userRepository.save(userEntity);
-
-        if (sendEmail) {
-            emailService.send(user.getEmail(), "Usuário criado", "Usuário criado com sucesso.");
-        }
-        return user;
+        return userRepository.save(userEntity);
     }
 
     public UserEntity findByUsername(String username) {

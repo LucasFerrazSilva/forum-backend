@@ -18,6 +18,7 @@ public class UserMapper {
         userEntity.setPassword(passwordEncoder.encode(newUserDTO.password()));
         userEntity.setCreatedAt(LocalDateTime.now());
         userEntity.setUpdatedAt(LocalDateTime.now());
+        userEntity.setFeatures(new String[]{"read:activation_token"});
 
         return userEntity;
     }
@@ -28,7 +29,8 @@ public class UserMapper {
                 userEntity.getUsername(),
                 userEntity.getEmail(),
                 userEntity.getCreatedAt(),
-                userEntity.getUpdatedAt()
+                userEntity.getUpdatedAt(),
+                userEntity.getFeatures()
         );
     }
 

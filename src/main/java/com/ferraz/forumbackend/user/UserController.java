@@ -1,6 +1,9 @@
 package com.ferraz.forumbackend.user;
 
+import com.ferraz.forumbackend.activationtoken.ActivationTokenEntity;
+import com.ferraz.forumbackend.activationtoken.ActivationTokenService;
 import com.ferraz.forumbackend.infra.CookieService;
+import com.ferraz.forumbackend.infra.EmailService;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
@@ -23,10 +26,14 @@ public class UserController {
     private final CookieService cookieService;
     private final UserService userService;
     private final SessionService sessionService;
+    private final ActivationTokenService activationTokenService;
 
     @PostMapping
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
         UserEntity userEntity = userService.insert(newUserDTO);
+        ActivationTokenEntity activationTokenEntity = activationTokenService.create(userEntity);
+        activationTokenService.sendActivationEmail(userEntity, activationTokenEntity);
+
         UserDTO userDTO = UserMapper.toDTO(userEntity);
         return  ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
     }

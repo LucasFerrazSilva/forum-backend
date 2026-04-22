@@ -25,5 +25,6 @@ public class UserEntity {
     private String password;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String[] features;
 
 }

@@ -57,6 +57,7 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.email()).isEqualTo(newUserDTO.email());
         assertThat(userDTO.createdAt()).isNotNull();
         assertThat(userDTO.updatedAt()).isNotNull();
+        assertThat(userDTO.features()).contains("read:activation_token");
 
         Optional<UserEntity> userEntityOptional = userRepository.findById(userDTO.id());
         assertThat(userEntityOptional).isPresent();
@@ -69,7 +70,8 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
         MimeMessage[] messages = greenMail.getReceivedMessages();
         assertThat(messages).hasSize(1);
         assertThat(messages[0].getAllRecipients()[0]).hasToString(newUserDTO.email());
-        assertThat(messages[0].getSubject()).isEqualTo("Usuário criado");
+        assertThat(messages[0].getSubject()).isEqualTo("Ative seu cadastro");
+        assertThat(messages[0].getContent()).asString().contains(newUserDTO.username());
     }
 
     @Test
