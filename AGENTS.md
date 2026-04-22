@@ -73,12 +73,27 @@ Docker Compose is auto-started by Spring Boot DevTools when running the app (`co
 - **Unit tests** (`src/test/.../unit/`): run with `./mvnw test` (Surefire, no DB needed)
 - **Integration tests** (`src/test/.../integration/`): run with `./mvnw verify` (Failsafe, uses Testcontainers PostgreSQL)
 - Integration tests extend `AbstractIntegrationTest`, which resets the DB via `flyway.clean()` + `flyway.migrate()` before each test class.
+- **One test class per endpoint per domain** — each class covers all scenarios for a single HTTP method + path combination (e.g., `CreateUserIntegrationTest`, `GetUserByUsernameIntegrationTest`).
 - Use `compose-all.yaml` for full-stack local runs; `compose.yaml` is for dev only.
 
 ### Coverage
 ```
 ./mvnw verify   # generates target/site/jacoco/jacoco.xml (used by SonarCloud)
 ```
+
+## Integration Test Structure
+Each domain has one test class per endpoint, all inside `src/test/java/.../integration/<domain>/`:
+
+| Class | Method | Path |
+|---|---|---|
+| `CreateUserIntegrationTest` | `POST` | `/api/v1/users` |
+| `GetUserByUsernameIntegrationTest` | `GET` | `/api/v1/users/{username}` |
+| `GetCurrentUserIntegrationTest` | `GET` | `/api/v1/users` (requires session cookie) |
+| `UpdateUserIntegrationTest` | `PATCH` | `/api/v1/users/{username}` |
+| `CreateSessionIntegrationTest` | `POST` | `/api/v1/sessions` |
+| `DeleteSessionIntegrationTest` | `DELETE` | `/api/v1/sessions` |
+
+When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` class in the matching domain package, extending `AbstractIntegrationTest`.
 
 ## API Endpoints
 | Method | Path | Description |

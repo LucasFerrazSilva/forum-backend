@@ -24,8 +24,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SessionControllerIntegrationTest extends AbstractIntegrationTest {
+class CreateSessionIntegrationTest extends AbstractIntegrationTest {
 
+    @Override
     public String getEndpoint() {
         return "/api/v1/sessions";
     }
@@ -76,7 +77,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um POST no endpoint '/api/v1/sessions' enviando senha valida mas email incorreto")
-    void shouldReturn400WhenSessionsEndpointIsCalledWithPostWithValidPasswordAndInvalidEmail() throws Exception {
+    void shouldReturn401WhenSessionsEndpointIsCalledWithPostWithValidPasswordAndInvalidEmail() throws Exception {
         String senhaValida = "SenhaValida";
         userFixture.user(b -> b.password(senhaValida));
         LoginDTO loginDTO = new LoginDTO("EmailIncorreto@mail.com", senhaValida);
@@ -92,7 +93,7 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um POST no endpoint '/api/v1/sessions' enviando email valido mas senha incorreta")
-    void shouldReturn400WhenSessionsEndpointIsCalledWithPostWithValidEmailAndInvalidPassword() throws Exception {
+    void shouldReturn401WhenSessionsEndpointIsCalledWithPostWithValidEmailAndInvalidPassword() throws Exception {
         UserEntity user = userFixture.user();
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), "SenhaIncorreta");
 
@@ -137,43 +138,5 @@ class SessionControllerIntegrationTest extends AbstractIntegrationTest {
                 .isEqualTo(LocalDate.now().plusDays(sessionService.getSessionExpirationDays()));
     }
 
-    // Delete
-    @Test
-    @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um DELETE no endpoint '/api/v1/sessions' sem enviar o cookie de sessao")
-    void shouldReturn400WhenSessionsEndpointIsCalledWithDeleteWithoutSessionCookie() throws Exception {
-        MockHttpServletResponse response = DELETE().send();
-
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        assertThat(response.getContentAsString()).isNotBlank();
-
-        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
-        assertThat(errorResponse).isNotNull();
-        assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        assertThat(errorResponse.getName()).isEqualTo("UnauthorizedException");
-        assertThat(errorResponse.getMessage()).isEqualTo("Cookie de sessão não enviado ou inválido");
-        assertThat(errorResponse.getAction()).isEqualTo("Verifique se um cookie válido de sessão está sendo enviado no cabeçalho da requisição");
-        assertThat(errorResponse.getInvalidFields()).isNull();
-    }
-
-    @Test
-    @DisplayName("Deve retornar 204 (No Content) quando fizer um DELETE no endpoint '/api/v1/sessions' enviando um cookie de sessao valido")
-    void shouldReturn200WhenSessionsEndpointIsCalledWithDeleteWithValidSessionCookie() throws Exception {
-        Cookie sessionCookie = sessionFixture.cookie();
-
-        MockHttpServletResponse response = DELETE().withSessionCookie(sessionCookie).send();
-
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT.value());
-        assertThat(response.getContentAsString()).isBlank();
-
-        List<Cookie>  cookies = List.of(response.getCookies());
-        assertThat(cookies).hasSize(1);
-        Cookie newSessionCookie = cookies.getFirst();
-        assertThat(newSessionCookie.getName()).isEqualTo(cookieName);
-        assertThat(newSessionCookie.getMaxAge()).isZero();
-
-        Optional<SessionEntity> sessionOptional =
-                sessionRepository.findFirstByTokenAndExpiresAtAfter(sessionCookie.getValue(), LocalDateTime.now());
-        assertThat(sessionOptional).isEmpty();
-    }
-
 }
+
