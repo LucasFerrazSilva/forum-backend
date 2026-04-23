@@ -53,7 +53,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
         UserDTO userDTO = extractObject(response, UserDTO.class);
         assertThat(userDTO).isNotNull();
         assertThat(userDTO.id()).isEqualTo(user.getId());
-        assertThat(userDTO.features()).contains("usuario-ativado");
+        assertThat(userDTO.features()).contains("create:session");
 
         Optional<ActivationTokenEntity> updatedToken = activationTokenRepository.findById(token.getId());
         assertThat(updatedToken).isPresent();
@@ -61,7 +61,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
 
         Optional<UserEntity> updatedUser = userRepository.findById(user.getId());
         assertThat(updatedUser).isPresent();
-        assertThat(updatedUser.get().getFeatures()).contains("usuario-ativado");
+        assertThat(updatedUser.get().getFeatures()).contains("create:session");
     }
 
     @Test

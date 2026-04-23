@@ -3,7 +3,7 @@ package com.ferraz.forumbackend.activationtoken;
 import com.ferraz.forumbackend.activationtoken.exception.InvalidActivationTokenException;
 import com.ferraz.forumbackend.infra.EmailService;
 import com.ferraz.forumbackend.user.UserEntity;
-import com.ferraz.forumbackend.user.UserRepository;
+import com.ferraz.forumbackend.user.UserService;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.UUID;
 public class ActivationTokenService {
 
     private final ActivationTokenRepository activationTokenRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final EmailService emailService;
 
     @Value("${server.activation-token.base-url}")
@@ -65,10 +65,6 @@ public class ActivationTokenService {
         activationTokenEntity.setUsedAt(LocalDateTime.now());
         activationTokenEntity.setUpdatedAt(LocalDateTime.now());
         activationTokenRepository.save(activationTokenEntity);
-        UserEntity user = activationTokenEntity.getUser();
-        user.setFeatures(new String[]{"usuario-ativado"});
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
-        return user;
+        return userService.setFeatures(activationTokenEntity.getUser(), new String[]{"create:session"});
     }
 }

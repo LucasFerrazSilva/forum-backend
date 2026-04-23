@@ -19,8 +19,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,6 +46,9 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
 
     @Value("${spring.mail.username}")
     private String from;
+
+    @Value("${server.activation-token.base-url}")
+    private String activationTokenBaseUrl;
 
     @AfterEach
     void afterEach() {
@@ -70,25 +77,32 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.updatedAt()).isNotNull();
         assertThat(userDTO.features()).contains("read:activation_token");
 
-        // Validar criação do token de ativação
-        UserEntity userEntity = userRepository.findById(userDTO.id()).get();
-        Optional<ActivationTokenEntity> optionalActivationToken = activationTokenRepository.findFirstByUser(userEntity);
-        assertThat(optionalActivationToken).isPresent();
-        ActivationTokenEntity activationTokenEntity = optionalActivationToken.get();
-        assertThat(activationTokenEntity.getUsedAt()).isNull();
-        assertThat(activationTokenEntity.getCreatedAt()).isNotNull();
-        assertThat(activationTokenEntity.getUpdatedAt()).isNotNull();
-
         // Validar envio do email com link de ativação
         MimeMessage[] messages = greenMail.getReceivedMessages();
         assertThat(messages).hasSize(1);
-        assertThat(messages[0].getAllRecipients()).hasSize(1);
-        assertThat(messages[0].getAllRecipients()[0]).hasToString(newUserDTO.email());
-        assertThat(messages[0].getFrom()).hasSize(1);
-        assertThat(messages[0].getFrom()[0]).hasToString(from);
-        assertThat(messages[0].getSubject()).isEqualTo("Ative seu cadastro");
-        assertThat(messages[0].getContent()).asString().contains(newUserDTO.username());
-        assertThat(messages[0].getContent()).asString().containsAnyOf("http://", "https://");
+        MimeMessage email = messages[0];
+        assertThat(email.getAllRecipients()).hasSize(1);
+        assertThat(email.getAllRecipients()[0]).hasToString(newUserDTO.email());
+        assertThat(email.getFrom()).hasSize(1);
+        assertThat(email.getFrom()[0]).hasToString(from);
+        assertThat(email.getSubject()).isEqualTo("Ative seu cadastro");
+
+        String emailContent = (String) email.getContent();
+        assertThat(emailContent).contains(newUserDTO.username());
+        String regex = "%s/api/v1/activation-token/activate/([\\w-]+)".formatted(activationTokenBaseUrl);
+        Matcher matcher = Pattern.compile(regex).matcher(emailContent);
+        assertThat(matcher.find()).isTrue();
+        UUID tokenId = UUID.fromString(matcher.group(1));
+
+        // Validar criação do token de ativação
+        Optional<ActivationTokenEntity> optionalActivationToken = activationTokenRepository.findById(tokenId);
+        assertThat(optionalActivationToken).isPresent();
+        ActivationTokenEntity activationTokenEntity = optionalActivationToken.get();
+        assertThat(activationTokenEntity.getUser().getId()).isEqualTo(userDTO.id());
+        assertThat(activationTokenEntity.getUsedAt()).isNull();
+        assertThat(activationTokenEntity.getExpiresAt()).isAfter(LocalDateTime.now());
+        assertThat(activationTokenEntity.getCreatedAt()).isNotNull();
+        assertThat(activationTokenEntity.getUpdatedAt()).isNotNull();
 
         // Ativação do usuário
         response =
@@ -96,11 +110,10 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
                         .withRequestBody(newUserDTO).send();
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         userDTO = extractObject(response, UserDTO.class);
-        assertThat(userDTO.features()).contains("usuario-ativado");
 
         // Validar se usuário foi ativado corretamente
-        userEntity = userRepository.findById(userDTO.id()).get();
-        assertThat(userEntity.getFeatures()).contains("usuario-ativado");
+        UserEntity userEntity = userRepository.findById(userDTO.id()).get();
+        assertThat(userEntity.getFeatures()).contains("create:session");
 
         // Fazer login com sucesso
         LoginDTO loginDTO = new LoginDTO(newUserDTO.email(), newUserDTO.password());
@@ -112,7 +125,6 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
         // Consultar dados do usuário
         response = GET().withEndpoint("/api/v1/users").withSessionCookie(sessionCookie).send();
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.getContentAsString()).isNotBlank();
     }
 
 }

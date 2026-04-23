@@ -53,4 +53,12 @@ public class UserService {
         userRepository.save(userEntity);
         return userEntity;
     }
+
+    @Transactional
+    public UserEntity setFeatures(UserEntity user, String[] features) {
+        user.setFeatures(features);
+        user.setUpdatedAt(LocalDateTime.now());
+        return userRepository.save(user);
+    }
+
 }
