@@ -7,11 +7,16 @@ Spring Boot 4 REST API (Java 21) for a forum platform. Uses PostgreSQL with Flyw
 ```
 com.ferraz.forumbackend
 ├── infra/
-│   ├── exception/   # Global error handling (ExceptionsHandler, BaseException hierarchy)
-│   └── security/    # CustomPasswordEncoder (BCrypt + pepper), CorsConfiguration
-├── user/            # UserEntity, UserController, UserService, UserRepository, UserMapper
-├── session/         # SessionEntity, SessionController, SessionService, SessionRepository
-└── status/          # Health/status endpoint
+│   ├── exception/        # Global error handling (ExceptionsHandler, BaseException hierarchy)
+│   ├── security/         # CustomPasswordEncoder (BCrypt + pepper), CorsConfiguration
+│   ├── CookieService     # Session cookie creation/reading (HTTP-only, configurable secure flag)
+│   └── EmailService      # Async email dispatch via JavaMailSender (@Async)
+├── activationtoken/      # ActivationTokenEntity, Controller, Service, Repository + InvalidActivationTokenException
+├── user/
+│   ├── validator/        # InsertUserValidator, UpdateUserValidator interfaces + implementations
+│   └── ...               # UserEntity, UserController, UserService, UserRepository, UserMapper
+├── session/              # SessionEntity, SessionController, SessionService, SessionRepository
+└── status/               # StatusController, StatusService, StatusDAO, entity/ (StatusDTO, DatabaseInfo)
 ```
 Each domain is self-contained (entity, controller, service, repository, DTOs, exceptions in one package).
 
@@ -25,9 +30,19 @@ Never throw raw `RuntimeException` — always use a typed `BaseException` subcla
 ### DTOs & Mapping
 Use static methods in `UserMapper` (e.g., `UserMapper.toDTO(entity)`). No MapStruct. DTOs live in `<domain>/dto/`.
 
+### Validation
+`UserService` injects `List<InsertUserValidator>` and `List<UpdateUserValidator>` — add a validator by implementing the interface and annotating it `@Component`. Validators throw `BaseException` subclasses (never return booleans). Examples: `UniqueEmailValidator`, `UniqueUsernameValidator`, `UsernameExistsValidator` in `user/validator/`.
+
 ### Authentication
 Login → `POST /api/v1/sessions` returns `session_id` as an HTTP-only cookie. Token stored in `TB_SESSIONS` with expiry.  
-Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing. Requires `security.pepper` env var (no default).
+Cookie lifecycle is managed by `CookieService` (create, expire, extract from request). Cookie name is configured via `server.cookie.name` (`session_id`).  
+Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing. Requires `security.pepper` env var (defaults to literal `"PASSWORD_PEPPER"` in dev — **set a real value in production**).
+
+### User Features
+`UserEntity` has a `String[] features` column. Registration sets `"read:activation_token"`. Account activation via `GET /api/v1/activation-token/activate/{id}` sets `"usuario-ativado"`. Future permission flags follow this same pattern.
+
+### Account Activation Flow
+`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and adds `"usuario-ativado"` feature to the user. Tokens are single-use (second activation attempt throws `InvalidActivationTokenException`).
 
 ### Database
 Hibernate `ddl-auto: validate` — schema is managed **only** via Flyway migrations in `src/main/resources/db/migration/`.  
@@ -39,10 +54,18 @@ Add new migrations as `V{n}__Description.sql`. Never alter existing migration fi
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/forum` | |
 | `DATABASE_USER` | `forum_user` | |
 | `DATABASE_PASSWORD` | `forum_password` | |
-| `PASSWORD_PEPPER` | *(none)* | **Required** — no default |
+| `PASSWORD_PEPPER` | `"PASSWORD_PEPPER"` | **Set a real value in production** |
 | `PASSWORD_ROUNDS` | `14` | BCrypt cost factor |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,...` | |
 | `COOKIE_SECURE` | `false` | Set `true` in production |
+| `ACTIVATION_TOKEN_BASE_URL` | `http://localhost:8080` | Base URL prepended to activation links in emails |
+| `MAIL_HOST` | `localhost` | SMTP host |
+| `MAIL_PORT` | `1025` | SMTP port |
+| `MAIL_USERNAME` | `contato@forum.com` | From address for outgoing emails |
+| `MAIL_PASSWORD` | *(empty)* | SMTP password |
+| `MAIL_AUTH` | `false` | Enable SMTP auth |
+| `MAIL_TLS` | `false` | Enable STARTTLS |
+| `SHOW_SQL` | `true` | Log Hibernate SQL |
 
 ## Versioning
 
@@ -90,24 +113,40 @@ Each domain has one test class per endpoint, all inside `src/test/java/.../integ
 | `GetUserByUsernameIntegrationTest` | `GET` | `/api/v1/users/{username}` |
 | `GetCurrentUserIntegrationTest` | `GET` | `/api/v1/users` (requires session cookie) |
 | `UpdateUserIntegrationTest` | `PATCH` | `/api/v1/users/{username}` |
+| `RegisterUserFlowIntegrationTest` | multi | End-to-end: register → activation email → activate → login |
 | `CreateSessionIntegrationTest` | `POST` | `/api/v1/sessions` |
 | `DeleteSessionIntegrationTest` | `DELETE` | `/api/v1/sessions` |
 
 When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` class in the matching domain package, extending `AbstractIntegrationTest`.
 
+### Test Infrastructure
+- **`TestcontainersConfig`** — spins up `postgres:17` and a `GreenMail` SMTP stub. Both are shared across all test classes (static, `withReuse(true)`).
+- **`AbstractIntegrationTest`** exposes `greenMail` (verify emails), `userFixture`, `sessionFixture`, `cookieName`. `@BeforeAll` resets DB; `@BeforeEach` purges GreenMail inbox.
+- **`MvcRequestBuilder`** — fluent builder for test HTTP calls. Use `GET()/POST()/PATCH()/DELETE()` from `AbstractIntegrationTest`, chain `.withRequestBody()`, `.shouldAuthenticateWithNewUser()`, `.withSessionCookie()`, then `.send()`.
+- **`UserFixture` / `SessionFixture`** — create test data via inner builder classes (e.g., `userFixture.user(b -> b.username("alice"))`). Use these instead of calling repositories directly.
+
 ## API Endpoints
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/v1/users` | Register user |
+| `POST` | `/api/v1/users` | Register user (also creates activation token + sends email) |
 | `GET` | `/api/v1/users/{username}` | Get user |
 | `PATCH` | `/api/v1/users/{username}` | Update user |
+| `GET` | `/api/v1/users` | Get current user via session cookie |
 | `POST` | `/api/v1/sessions` | Login (sets `session_id` cookie) |
+| `DELETE` | `/api/v1/sessions` | Logout |
+| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `"usuario-ativado"` feature) |
 | `GET` | `/actuator/...` | Spring Actuator (status/info) |
 
 ## Key Files
 - `src/main/resources/application.yml` — all config with env var defaults
 - `src/main/resources/db/migration/` — Flyway SQL migrations (source of truth for schema)
 - `src/test/java/.../integration/AbstractIntegrationTest.java` — base class for all integration tests
+- `src/test/java/.../integration/util/MvcRequestBuilder.java` — fluent HTTP test builder
+- `src/test/java/.../integration/fixture/UserFixture.java` — test user data factory
+- `src/test/java/.../integration/fixture/SessionFixture.java` — test session/cookie factory
+- `src/test/java/.../integration/util/TestcontainersConfig.java` — Postgres + GreenMail container setup
 - `src/main/java/.../infra/exception/ExceptionsHandler.java` — global error handler
 - `src/main/java/.../infra/security/CustomPasswordEncoder.java` — pepper+bcrypt logic
+- `src/main/java/.../infra/CookieService.java` — session cookie management
+- `src/main/java/.../infra/EmailService.java` — async email dispatch
 

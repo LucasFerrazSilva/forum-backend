@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
+class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
 
     @Override
     public String getEndpoint() {
