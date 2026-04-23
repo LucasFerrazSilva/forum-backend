@@ -130,7 +130,7 @@ class CreateSessionIntegrationTest extends AbstractIntegrationTest {
         assertThat(sessionCookie.isHttpOnly()).isTrue();
 
         Optional<SessionEntity> sessionOptional =
-                sessionRepository.findFirstByTokenAndExpiresAtAfter(sessionDTO.sessionId(), LocalDateTime.now());
+                sessionRepository.findFirstByToken(sessionDTO.sessionId());
         assertThat(sessionOptional).isPresent();
         SessionEntity sessionEntity = sessionOptional.get();
         assertThat(sessionEntity.getUser()).isEqualTo(user);

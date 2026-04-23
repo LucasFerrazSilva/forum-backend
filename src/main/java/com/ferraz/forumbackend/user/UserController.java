@@ -3,14 +3,13 @@ package com.ferraz.forumbackend.user;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenEntity;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenService;
 import com.ferraz.forumbackend.infra.CookieService;
-import com.ferraz.forumbackend.infra.EmailService;
+import com.ferraz.forumbackend.infra.SessionHolder;
+import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.SessionEntity;
-import com.ferraz.forumbackend.session.SessionService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +24,8 @@ public class UserController {
 
     private final CookieService cookieService;
     private final UserService userService;
-    private final SessionService sessionService;
     private final ActivationTokenService activationTokenService;
+    private final SessionHolder sessionHolder;
 
     @PostMapping
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
@@ -53,16 +52,17 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<UserDTO> findBySessionId(HttpServletRequest request, HttpServletResponse response) {
-        Cookie sessionCookie = cookieService.getSessionCookie(request);
+    public ResponseEntity<UserDTO> findBySessionId(HttpServletResponse response) {
+        if (sessionHolder.isAnonymousSession()) {
+            throw new UnauthorizedException();
+        }
 
-        SessionEntity session = sessionService.getSession(sessionCookie.getValue());
-        UserEntity userEntity = session.getUser();
+        SessionEntity session = sessionHolder.getSession();
+        Cookie sessionCookie = cookieService.createSessionCookie(session);
+        response.addCookie(sessionCookie);
 
-        Cookie cookie = cookieService.createSessionCookie(session);
-        response.addCookie(cookie);
+        UserDTO userDTO = UserMapper.toDTO(sessionHolder.getUser());
 
-        UserDTO userDTO = UserMapper.toDTO(userEntity);
         return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
     }
 

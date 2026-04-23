@@ -1,6 +1,5 @@
 package com.ferraz.forumbackend.session;
 
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.exception.InvalidCredentialsException;
 import com.ferraz.forumbackend.user.UserEntity;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -48,20 +48,20 @@ public class SessionService {
 
     @Transactional
     public SessionEntity getSession(String token) {
-        SessionEntity sessionEntity =
-                sessionRepository.findFirstByTokenAndExpiresAtAfter(token, LocalDateTime.now())
-                        .orElseThrow(UnauthorizedException::new);
+        Optional<SessionEntity> optionalSession =
+                sessionRepository.findFirstByTokenAndExpiresAtAfter(token, LocalDateTime.now());
 
-        sessionEntity.setExpiresAt(LocalDateTime.now().plusDays(getSessionExpirationDays()));
-        sessionEntity.setUpdatedAt(LocalDateTime.now());
-        sessionRepository.save(sessionEntity);
+        optionalSession.ifPresent(sessionEntity -> {
+            sessionEntity.setExpiresAt(LocalDateTime.now().plusDays(getSessionExpirationDays()));
+            sessionEntity.setUpdatedAt(LocalDateTime.now());
+            sessionRepository.save(sessionEntity);
+        });
 
-        return sessionEntity;
+        return optionalSession.orElse(null);
     }
 
     @Transactional
-    public SessionEntity inactivate(String token) {
-        SessionEntity sessionEntity = sessionRepository.findFirstByToken(token).orElseThrow(UnauthorizedException::new);
+    public SessionEntity inactivate(SessionEntity sessionEntity) {
         sessionEntity.setExpiresAt(LocalDateTime.now().minusSeconds(1));
         sessionEntity.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(sessionEntity);
