@@ -70,6 +70,8 @@ jobs:
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_AUTH: ${{ secrets.MAIL_AUTH }}
       MAIL_TLS: ${{ secrets.MAIL_TLS }}
+      ACTIVATION_TOKEN_BASE_URL: ${{ secrets.ACTIVATION_TOKEN_BASE_URL }}
+      ACTIVATION_TOKEN_EXPIRATION_DAYS: ${{ secrets.ACTIVATION_TOKEN_EXPIRATION_DAYS }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -92,7 +94,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION,PASSWORD_PEPPER,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,MAIL_AUTH,MAIL_TLS
+          envs: DOCKER_USERNAME,IMAGE_NAME,APP_VERSION,PASSWORD_PEPPER,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,MAIL_AUTH,MAIL_TLS,ACTIVATION_TOKEN_BASE_URL,ACTIVATION_TOKEN_EXPIRATION_DAYS
           script: |
             set -e
 
@@ -106,6 +108,8 @@ jobs:
             --from-literal=MAIL_PASSWORD="$MAIL_PASSWORD" \
             --from-literal=MAIL_AUTH="$MAIL_AUTH" \
             --from-literal=MAIL_TLS="$MAIL_TLS" \
+            --from-literal=ACTIVATION_TOKEN_BASE_URL="$ACTIVATION_TOKEN_BASE_URL" \
+            --from-literal=ACTIVATION_TOKEN_EXPIRATION_DAYS="$ACTIVATION_TOKEN_EXPIRATION_DAYS" \
             -n forum \
             --dry-run=client -o yaml | kubectl apply -f -
 

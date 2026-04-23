@@ -110,6 +110,57 @@ Docker Compose is auto-started by Spring Boot DevTools when running the app (`co
 ./mvnw verify   # generates target/site/jacoco/jacoco.xml (used by SonarCloud)
 ```
 
+### CI/CD
+
+#### Workflows
+| File | Trigger | What it does |
+|---|---|---|
+| `sonar_workflow.yaml` | PR opened/updated | Runs `./mvnw verify` + SonarCloud analysis |
+| `pull_request_workflow.yaml` | PR merged to `main` | Builds JAR → Docker image tagged with `pom.xml` version → pushes to Docker Hub → deploys to VPS via SSH + `kubectl` |
+
+The Docker image tag is read directly from `pom.xml` at build time — **always bump the version before merging**.
+
+#### When to update CI/CD files after a code change
+
+After any change, check each item below:
+
+**Adding a new environment variable:**
+1. `k8s/app/app-deployment.yml` — add a new `env` entry reading from the appropriate k8s Secret (`security` for app config, `db-credentials` for database)
+2. `.github/workflows/pull_request_workflow.yaml` (deploy job):
+   - Add `VAR_NAME: ${{ secrets.VAR_NAME }}` to the `env:` block
+   - Add `VAR_NAME` to the `envs:` line of the `appleboy/ssh-action` step
+   - Add `--from-literal=VAR_NAME="$VAR_NAME"` to the `kubectl create secret generic security` command
+3. Create the corresponding GitHub Actions secret (see table below)
+
+**Adding a new k8s manifest** (`k8s/**`): add `kubectl apply -f` for the new file in the SSH script of `pull_request_workflow.yaml`, in the correct order (dependencies first).
+
+**No CI/CD changes needed** for: refactors, test additions, migration files, or changes that only affect existing env vars already wired up.
+
+#### GitHub Actions secrets — complete list
+
+These must exist in **Settings → Secrets and variables → Actions** of the repository:
+
+| Secret | Used in | Description |
+|---|---|---|
+| `DOCKER_USERNAME` | `pull_request_workflow.yaml` | Docker Hub username (image is pushed as `{username}/forum-backend`) |
+| `DOCKERHUB_TOKEN` | `pull_request_workflow.yaml` | Docker Hub access token (not the account password) |
+| `VPS_HOST` | `pull_request_workflow.yaml` | VPS hostname or IP address |
+| `VPS_USERNAME` | `pull_request_workflow.yaml` | SSH user on the VPS |
+| `VPS_SSH_KEY` | `pull_request_workflow.yaml` | Full PEM private key for SSH access to the VPS |
+| `VPS_PORT` | `pull_request_workflow.yaml` | SSH port on the VPS (usually `22`) |
+| `SONAR_TOKEN` | `sonar_workflow.yaml` | SonarCloud project token |
+| `PASSWORD_PEPPER` | `pull_request_workflow.yaml` → k8s `security` secret | BCrypt pepper — must match what the app was started with |
+| `MAIL_HOST` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP server hostname |
+| `MAIL_PORT` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP server port |
+| `MAIL_USERNAME` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP login / from address |
+| `MAIL_PASSWORD` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP password |
+| `MAIL_AUTH` | `pull_request_workflow.yaml` → k8s `security` secret | `true` or `false` |
+| `MAIL_TLS` | `pull_request_workflow.yaml` → k8s `security` secret | `true` or `false` |
+| `ACTIVATION_TOKEN_BASE_URL` | `pull_request_workflow.yaml` → k8s `security` secret | Public base URL of the API (e.g. `https://api.forum.com`) — used in activation email links |
+| `ACTIVATION_TOKEN_EXPIRATION_DAYS` | `pull_request_workflow.yaml` → k8s `security` secret | Days until an activation token expires (e.g. `7`) |
+
+> Database credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`) are stored directly in `k8s/secrets/db-credentials.yml` as base64-encoded values and applied via `kubectl apply` — they are **not** GitHub secrets.
+
 ## Integration Test Structure
 Each domain has one test class per endpoint, all inside `src/test/java/.../integration/<domain>/`:
 
