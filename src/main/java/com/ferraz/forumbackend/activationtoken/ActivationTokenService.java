@@ -5,6 +5,7 @@ import com.ferraz.forumbackend.infra.EmailService;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,9 +24,14 @@ public class ActivationTokenService {
     @Value("${server.activation-token.base-url}")
     private String baseUrl;
 
+    @Value("${server.activation-token.expiration-days}")
+    @Getter
+    private int activationTokenExpirationDays;
+
     @Transactional
     public ActivationTokenEntity create(UserEntity userEntity) {
-        ActivationTokenEntity activationTokenEntity = ActivationTokenEntity.create(userEntity);
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(activationTokenExpirationDays);
+        ActivationTokenEntity activationTokenEntity = ActivationTokenEntity.create(userEntity, expiresAt);
         return activationTokenRepository.save(activationTokenEntity);
     }
 
@@ -51,6 +57,9 @@ public class ActivationTokenService {
         ActivationTokenEntity activationTokenEntity =
                 activationTokenRepository.findById(id).orElseThrow(() -> new InvalidActivationTokenException(id));
         if (activationTokenEntity.getUsedAt() != null) {
+            throw new InvalidActivationTokenException(id);
+        }
+        if (activationTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new InvalidActivationTokenException(id);
         }
         activationTokenEntity.setUsedAt(LocalDateTime.now());

@@ -59,6 +59,7 @@ Add new migrations as `V{n}__Description.sql`. Never alter existing migration fi
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,...` | |
 | `COOKIE_SECURE` | `false` | Set `true` in production |
 | `ACTIVATION_TOKEN_BASE_URL` | `http://localhost:8080` | Base URL prepended to activation links in emails |
+| `ACTIVATION_TOKEN_EXPIRATION_DAYS` | `7` | Days until an activation token expires |
 | `MAIL_HOST` | `localhost` | SMTP host |
 | `MAIL_PORT` | `1025` | SMTP port |
 | `MAIL_USERNAME` | `contato@forum.com` | From address for outgoing emails |
@@ -99,6 +100,11 @@ Docker Compose is auto-started by Spring Boot DevTools when running the app (`co
 - **One test class per endpoint per domain** — each class covers all scenarios for a single HTTP method + path combination (e.g., `CreateUserIntegrationTest`, `GetUserByUsernameIntegrationTest`).
 - Use `compose-all.yaml` for full-stack local runs; `compose.yaml` is for dev only.
 
+> **⚠️ Mandatory for every new feature:** tests are part of the feature — not optional.  
+> Every new endpoint or behaviour change **must** include corresponding unit and/or integration tests.  
+> After writing the tests, **run `./mvnw verify`** and confirm the full suite is green before considering the task done.  
+> Never deliver a feature without running the tests and confirming they pass.
+
 ### Coverage
 ```
 ./mvnw verify   # generates target/site/jacoco/jacoco.xml (used by SonarCloud)
@@ -116,6 +122,7 @@ Each domain has one test class per endpoint, all inside `src/test/java/.../integ
 | `RegisterUserFlowIntegrationTest` | multi | End-to-end: register → activation email → activate → login |
 | `CreateSessionIntegrationTest` | `POST` | `/api/v1/sessions` |
 | `DeleteSessionIntegrationTest` | `DELETE` | `/api/v1/sessions` |
+| `ActivateAccountIntegrationTest` | `GET` | `/api/v1/activation-token/activate/{id}` |
 
 When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` class in the matching domain package, extending `AbstractIntegrationTest`.
 
@@ -123,7 +130,7 @@ When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` 
 - **`TestcontainersConfig`** — spins up `postgres:17` and a `GreenMail` SMTP stub. Both are shared across all test classes (static, `withReuse(true)`).
 - **`AbstractIntegrationTest`** exposes `greenMail` (verify emails), `userFixture`, `sessionFixture`, `cookieName`. `@BeforeAll` resets DB; `@BeforeEach` purges GreenMail inbox.
 - **`MvcRequestBuilder`** — fluent builder for test HTTP calls. Use `GET()/POST()/PATCH()/DELETE()` from `AbstractIntegrationTest`, chain `.withRequestBody()`, `.shouldAuthenticateWithNewUser()`, `.withSessionCookie()`, then `.send()`.
-- **`UserFixture` / `SessionFixture`** — create test data via inner builder classes (e.g., `userFixture.user(b -> b.username("alice"))`). Use these instead of calling repositories directly.
+- **`UserFixture` / `SessionFixture` / `ActivationTokenFixture`** — create test data via inner builder classes (e.g., `userFixture.user(b -> b.username("alice"))`, `activationTokenFixture.token(user, b -> b.expiresAt(LocalDateTime.now().minusDays(1)))`). Use these instead of calling repositories directly.
 
 ## API Endpoints
 | Method | Path | Description |
@@ -144,6 +151,7 @@ When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` 
 - `src/test/java/.../integration/util/MvcRequestBuilder.java` — fluent HTTP test builder
 - `src/test/java/.../integration/fixture/UserFixture.java` — test user data factory
 - `src/test/java/.../integration/fixture/SessionFixture.java` — test session/cookie factory
+- `src/test/java/.../integration/fixture/ActivationTokenFixture.java` — test activation token factory
 - `src/test/java/.../integration/util/TestcontainersConfig.java` — Postgres + GreenMail container setup
 - `src/main/java/.../infra/exception/ExceptionsHandler.java` — global error handler
 - `src/main/java/.../infra/security/CustomPasswordEncoder.java` — pepper+bcrypt logic

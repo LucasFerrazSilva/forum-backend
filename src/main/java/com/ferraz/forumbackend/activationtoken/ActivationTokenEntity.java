@@ -25,12 +25,14 @@ public class ActivationTokenEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
     private LocalDateTime usedAt;
+    private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static ActivationTokenEntity create(UserEntity user) {
+    public static ActivationTokenEntity create(UserEntity user, LocalDateTime expiresAt) {
         ActivationTokenEntity activationTokenEntity = new ActivationTokenEntity();
         activationTokenEntity.setUser(user);
+        activationTokenEntity.setExpiresAt(expiresAt);
         activationTokenEntity.setCreatedAt(LocalDateTime.now());
         activationTokenEntity.setUpdatedAt(LocalDateTime.now());
         return activationTokenEntity;

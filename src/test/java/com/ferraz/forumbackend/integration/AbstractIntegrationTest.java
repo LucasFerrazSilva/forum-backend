@@ -2,6 +2,7 @@ package com.ferraz.forumbackend.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ferraz.forumbackend.integration.fixture.ActivationTokenFixture;
 import com.ferraz.forumbackend.integration.fixture.SessionFixture;
 import com.ferraz.forumbackend.integration.fixture.UserFixture;
 import com.ferraz.forumbackend.integration.util.HttpMethod;
@@ -44,6 +45,9 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected SessionFixture sessionFixture;
+
+    @Autowired
+    protected ActivationTokenFixture activationTokenFixture;
 
     @Value("${server.cookie.name}")
     protected String cookieName;

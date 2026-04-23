@@ -54,6 +54,7 @@ security:
 server:
   activation-token:
     base-url: ${ACTIVATION_TOKEN_BASE_URL:http://localhost:8080}
+    expiration-days: ${ACTIVATION_TOKEN_EXPIRATION_DAYS:7}
   cookie:
     name: session_id
     secure: ${COOKIE_SECURE:false}
