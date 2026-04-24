@@ -7,10 +7,12 @@ Spring Boot 4 REST API (Java 21) for a forum platform. Uses PostgreSQL with Flyw
 ```
 com.ferraz.forumbackend
 ├── infra/
+│   ├── annotation/       # @RequiresFeature — method-level authorization annotation
+│   ├── aspect/           # RequiresFeatureAspect — enforces @RequiresFeature via AOP
 │   ├── exception/        # Global error handling (ExceptionsHandler, BaseException hierarchy)
+│   ├── filter/           # SessionFilter — OncePerRequestFilter that populates UserContext per request
 │   ├── security/         # CustomPasswordEncoder (BCrypt + pepper), CorsConfiguration
-│   ├── CookieService     # Session cookie creation/reading (HTTP-only, configurable secure flag)
-│   └── EmailService      # Async email dispatch via JavaMailSender (@Async)
+│   └── service/          # CookieService, EmailService, AuthorizationService, UserContext
 ├── activationtoken/      # ActivationTokenEntity, Controller, Service, Repository + InvalidActivationTokenException
 ├── user/
 │   ├── validator/        # InsertUserValidator, UpdateUserValidator interfaces + implementations
@@ -23,7 +25,7 @@ Each domain is self-contained (entity, controller, service, repository, DTOs, ex
 ## Key Patterns
 
 ### Error Handling
-Throw subclasses of `BaseException` (e.g., `NotFoundException`, `DatabaseException`, `ValidationException`).  
+Throw subclasses of `BaseException` (e.g., `NotFoundException`, `DatabaseException`, `ValidationException`, `UnauthorizedException`, `ForbiddenException`).  
 `ExceptionsHandler` (`@RestControllerAdvice`) catches all and returns `ErrorResponse`.  
 Never throw raw `RuntimeException` — always use a typed `BaseException` subclass.
 
@@ -38,11 +40,26 @@ Login → `POST /api/v1/sessions` returns `session_id` as an HTTP-only cookie. T
 Cookie lifecycle is managed by `CookieService` (create, expire, extract from request). Cookie name is configured via `server.cookie.name` (`session_id`).  
 Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing. Requires `security.pepper` env var (defaults to literal `"PASSWORD_PEPPER"` in dev — **set a real value in production**).
 
+**Request lifecycle:** `SessionFilter` (`OncePerRequestFilter`, `@Order(HIGHEST_PRECEDENCE)`) runs on every request — reads the session cookie, looks up the session in `TB_SESSIONS`, and stores the result in `UserContext` (thread-local). Unauthenticated requests get an anonymous `UserContext` with features `["create:user"]`. `UserContext.clear()` is always called in the `finally` block.
+
+**Authorization:** Annotate controller methods with `@RequiresFeature("feature:name")`. `RequiresFeatureAspect` intercepts the call before execution and uses `AuthorizationService.loggedUserCan()` to check the current user's features. Throws `UnauthorizedException` (401) if the request is anonymous, `ForbiddenException` (403) if authenticated but lacking the feature.
+
 ### User Features
-`UserEntity` has a `String[] features` column. Registration sets `"read:activation_token"`. Account activation via `GET /api/v1/activation-token/activate/{id}` sets `"usuario-ativado"`. Future permission flags follow this same pattern.
+`UserEntity` has a `String[] features` column that gates access to endpoints and actions. The full lifecycle:
+
+| Stage | Features set |
+|---|---|
+| Anonymous (no session) | `["create:user"]` (virtual, via `UserContext`) |
+| After registration | `["read:activation_token"]` |
+| After account activation | `["create:session", "read:session"]` |
+
+- `POST /api/v1/users` requires `"create:user"` (available to anonymous users).
+- `POST /api/v1/sessions` (login) checks that the user has `"create:session"` — unactivated accounts cannot log in.
+- `GET /api/v1/users` (current user) requires `"read:session"`.
+- Future permissions follow the same pattern: add a feature string and annotate the endpoint with `@RequiresFeature("feature:name")`.
 
 ### Account Activation Flow
-`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and adds `"usuario-ativado"` feature to the user. Tokens are single-use (second activation attempt throws `InvalidActivationTokenException`).
+`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and replaces the user's features with `["create:session", "read:session"]` (via `UserService.activate`). Tokens are single-use and expire; any invalid attempt throws `InvalidActivationTokenException`.
 
 ### Database
 Hibernate `ddl-auto: validate` — schema is managed **only** via Flyway migrations in `src/main/resources/db/migration/`.  
@@ -192,7 +209,7 @@ When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` 
 | `GET` | `/api/v1/users` | Get current user via session cookie |
 | `POST` | `/api/v1/sessions` | Login (sets `session_id` cookie) |
 | `DELETE` | `/api/v1/sessions` | Logout |
-| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `"usuario-ativado"` feature) |
+| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `["create:session", "read:session"]` features) |
 | `GET` | `/actuator/...` | Spring Actuator (status/info) |
 
 ## Key Files
@@ -206,6 +223,11 @@ When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` 
 - `src/test/java/.../integration/util/TestcontainersConfig.java` — Postgres + GreenMail container setup
 - `src/main/java/.../infra/exception/ExceptionsHandler.java` — global error handler
 - `src/main/java/.../infra/security/CustomPasswordEncoder.java` — pepper+bcrypt logic
-- `src/main/java/.../infra/CookieService.java` — session cookie management
-- `src/main/java/.../infra/EmailService.java` — async email dispatch
+- `src/main/java/.../infra/service/CookieService.java` — session cookie management
+- `src/main/java/.../infra/service/EmailService.java` — async email dispatch
+- `src/main/java/.../infra/service/UserContext.java` — thread-local session/user holder (cleared in `SessionFilter.finally`)
+- `src/main/java/.../infra/service/AuthorizationService.java` — feature-flag checks (`loggedUserCan`, `can`)
+- `src/main/java/.../infra/filter/SessionFilter.java` — populates `UserContext` on every request
+- `src/main/java/.../infra/annotation/RequiresFeature.java` — method-level authorization annotation
+- `src/main/java/.../infra/aspect/RequiresFeatureAspect.java` — AOP enforcement of `@RequiresFeature`
 
