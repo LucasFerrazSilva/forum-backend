@@ -61,12 +61,12 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar validar o fluxo completo de registro e ativação de usuário")
     void shouldValidateFullUserRegistrationFlow() throws Exception {
-        // Registrar usuário
+        // Registra usuário
         NewUserDTO newUserDTO = userFixture.newUserDTO();
         MockHttpServletResponse response =
                 POST().withEndpoint("/api/v1/users").withRequestBody(newUserDTO).send();
 
-        // Validar se usuário foi criado corretamente
+        // Valida se usuário foi criado corretamente
         assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
         UserDTO userDTO = extractObject(response, UserDTO.class);
         assertThat(userDTO).isNotNull();
@@ -77,7 +77,7 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(userDTO.updatedAt()).isNotNull();
         assertThat(userDTO.features()).contains("read:activation_token");
 
-        // Validar envio do email com link de ativação
+        // Valida envio do email com link de ativação
         MimeMessage[] messages = greenMail.getReceivedMessages();
         assertThat(messages).hasSize(1);
         MimeMessage email = messages[0];
@@ -94,7 +94,7 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(matcher.find()).isTrue();
         UUID tokenId = UUID.fromString(matcher.group(1));
 
-        // Validar criação do token de ativação
+        // Valida criação do token de ativação
         Optional<ActivationTokenEntity> optionalActivationToken = activationTokenRepository.findById(tokenId);
         assertThat(optionalActivationToken).isPresent();
         ActivationTokenEntity activationTokenEntity = optionalActivationToken.get();
@@ -111,20 +111,24 @@ class RegisterUserFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         userDTO = extractObject(response, UserDTO.class);
 
-        // Validar se usuário foi ativado corretamente
+        // Valida se usuário foi ativado corretamente
         UserEntity userEntity = userRepository.findById(userDTO.id()).get();
         assertThat(userEntity.getFeatures()).contains("create:session");
 
-        // Fazer login com sucesso
+        // Faz login com sucesso
         LoginDTO loginDTO = new LoginDTO(newUserDTO.email(), newUserDTO.password());
         response = POST().withEndpoint("/api/v1/sessions").withRequestBody(loginDTO).send();
         assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED.value());
         List<Cookie> cookies = List.of(response.getCookies());
         Cookie sessionCookie = cookies.getFirst();
 
-        // Consultar dados do usuário
+        // Consulta dados do usuário
         response = GET().withEndpoint("/api/v1/users").withSessionCookie(sessionCookie).send();
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        UserDTO loggedUserDTO = extractObject(response, UserDTO.class);
+        assertThat(loggedUserDTO).isNotNull();
+        assertThat(userDTO.id()).isEqualTo(userDTO.id());
+        assertThat(userDTO.username()).isEqualTo(newUserDTO.username());
     }
 
 }

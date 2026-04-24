@@ -55,7 +55,7 @@ public class UserService {
     }
 
     public UserEntity activate(UserEntity user) {
-        return this.setFeatures(user, new String[]{"create:session"});
+        return this.setFeatures(user, new String[]{"create:session", "read:session"});
     }
 
     @Transactional

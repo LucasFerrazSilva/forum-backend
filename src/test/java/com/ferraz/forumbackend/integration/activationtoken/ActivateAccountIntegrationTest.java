@@ -80,7 +80,8 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 404 (Not Found) quando o token já tiver sido utilizado")
     void shouldReturn404WhenTokenIsAlreadyUsed() throws Exception {
         UserEntity user = userFixture.user();
-        ActivationTokenEntity token = activationTokenFixture.token(user, b -> b.usedAt(LocalDateTime.now().minusMinutes(1)));
+        ActivationTokenEntity token =
+                activationTokenFixture.token(user, b -> b.usedAt(LocalDateTime.now().minusMinutes(1)));
 
         MockHttpServletResponse response = GET().withEndpoint(getEndpoint() + token.getId()).send();
 

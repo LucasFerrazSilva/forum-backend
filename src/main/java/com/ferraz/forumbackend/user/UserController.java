@@ -2,9 +2,10 @@ package com.ferraz.forumbackend.user;
 
 import com.ferraz.forumbackend.activationtoken.ActivationTokenEntity;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenService;
+import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
+import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.infra.service.UserContext;
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
@@ -25,6 +26,7 @@ public class UserController {
     private final CookieService cookieService;
     private final UserService userService;
     private final ActivationTokenService activationTokenService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
@@ -51,11 +53,8 @@ public class UserController {
     }
 
     @GetMapping
+    @RequiresFeature("read:session")
     public ResponseEntity<UserDTO> findBySessionId(HttpServletResponse response) {
-        if (UserContext.isAnonymousSession()) {
-            throw new UnauthorizedException();
-        }
-
         SessionEntity session = UserContext.getSession();
         Cookie sessionCookie = cookieService.createSessionCookie(session);
         response.addCookie(sessionCookie);
