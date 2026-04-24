@@ -1,18 +1,13 @@
 package com.ferraz.forumbackend.integration.fixture;
 
-import com.ferraz.forumbackend.infra.CookieService;
-import com.ferraz.forumbackend.session.SessionController;
+import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionService;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.user.UserEntity;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor

@@ -1,6 +1,6 @@
 package com.ferraz.forumbackend.unit.infra.exception;
 
-import com.ferraz.forumbackend.infra.CookieService;
+import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.infra.exception.ExceptionsHandler;

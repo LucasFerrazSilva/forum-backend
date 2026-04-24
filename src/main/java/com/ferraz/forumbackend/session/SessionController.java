@@ -1,11 +1,13 @@
 package com.ferraz.forumbackend.session;
 
-import com.ferraz.forumbackend.infra.CookieService;
-import com.ferraz.forumbackend.infra.SessionHolder;
+import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
+import com.ferraz.forumbackend.infra.service.CookieService;
+import com.ferraz.forumbackend.infra.service.UserContext;
 import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.dto.SessionDTO;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +22,10 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final CookieService cookieService;
-    private final SessionHolder sessionHolder;
 
 
     @PostMapping
+    @RequiresFeature("create:session")
     public ResponseEntity<SessionDTO> getSession(@Valid @RequestBody LoginDTO loginDTO, HttpServletResponse response) {
         SessionEntity sessionEntity = sessionService.getSession(loginDTO);
 
@@ -35,12 +37,13 @@ public class SessionController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteSession(HttpServletResponse response) {
-        if (sessionHolder.isAnonymousSession()) {
+    public ResponseEntity<Void> deleteSession(HttpServletRequest request, HttpServletResponse response) {
+        if (UserContext.isAnonymousSession()) {
             throw new UnauthorizedException();
         }
-        sessionService.inactivate(sessionHolder.getSession());
-        response.addCookie(cookieService.createExpiredSessionCookie());
+        sessionService.inactivate(UserContext.getSession());
+        Cookie sessionCookie = cookieService.extractSessionCookie(request);
+        response.addCookie(cookieService.createExpiredSessionCookie(sessionCookie.getValue()));
         return ResponseEntity.noContent().build();
     }
 

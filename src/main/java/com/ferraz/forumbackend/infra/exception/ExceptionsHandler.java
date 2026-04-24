@@ -1,6 +1,8 @@
 package com.ferraz.forumbackend.infra.exception;
 
-import com.ferraz.forumbackend.infra.CookieService;
+import com.ferraz.forumbackend.infra.service.CookieService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -31,8 +33,11 @@ public class ExceptionsHandler {
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex, HttpServletResponse response) {
-        response.addCookie(cookieService.createExpiredSessionCookie());
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex, HttpServletRequest request, HttpServletResponse response) {
+        Cookie sessionCookie = cookieService.extractSessionCookie(request);
+        if (sessionCookie != null) {
+            response.addCookie(cookieService.createExpiredSessionCookie(sessionCookie.getValue()));
+        }
         return handleException(ex);
     }
 

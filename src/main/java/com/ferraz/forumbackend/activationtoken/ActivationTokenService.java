@@ -1,7 +1,7 @@
 package com.ferraz.forumbackend.activationtoken;
 
 import com.ferraz.forumbackend.activationtoken.exception.InvalidActivationTokenException;
-import com.ferraz.forumbackend.infra.EmailService;
+import com.ferraz.forumbackend.infra.service.EmailService;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserService;
 import jakarta.transaction.Transactional;

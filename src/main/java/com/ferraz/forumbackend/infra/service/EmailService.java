@@ -1,4 +1,4 @@
-package com.ferraz.forumbackend.infra;
+package com.ferraz.forumbackend.infra.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

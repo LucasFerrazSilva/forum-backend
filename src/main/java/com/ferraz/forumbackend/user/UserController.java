@@ -2,8 +2,8 @@ package com.ferraz.forumbackend.user;
 
 import com.ferraz.forumbackend.activationtoken.ActivationTokenEntity;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenService;
-import com.ferraz.forumbackend.infra.CookieService;
-import com.ferraz.forumbackend.infra.SessionHolder;
+import com.ferraz.forumbackend.infra.service.CookieService;
+import com.ferraz.forumbackend.infra.service.UserContext;
 import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
@@ -25,7 +25,6 @@ public class UserController {
     private final CookieService cookieService;
     private final UserService userService;
     private final ActivationTokenService activationTokenService;
-    private final SessionHolder sessionHolder;
 
     @PostMapping
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
@@ -53,15 +52,15 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<UserDTO> findBySessionId(HttpServletResponse response) {
-        if (sessionHolder.isAnonymousSession()) {
+        if (UserContext.isAnonymousSession()) {
             throw new UnauthorizedException();
         }
 
-        SessionEntity session = sessionHolder.getSession();
+        SessionEntity session = UserContext.getSession();
         Cookie sessionCookie = cookieService.createSessionCookie(session);
         response.addCookie(sessionCookie);
 
-        UserDTO userDTO = UserMapper.toDTO(sessionHolder.getUser());
+        UserDTO userDTO = UserMapper.toDTO(UserContext.getUser());
 
         return  ResponseEntity.status(HttpStatus.OK).body(userDTO);
     }
