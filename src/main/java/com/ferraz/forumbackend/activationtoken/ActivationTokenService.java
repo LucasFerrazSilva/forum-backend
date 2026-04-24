@@ -65,6 +65,6 @@ public class ActivationTokenService {
         activationTokenEntity.setUsedAt(LocalDateTime.now());
         activationTokenEntity.setUpdatedAt(LocalDateTime.now());
         activationTokenRepository.save(activationTokenEntity);
-        return userService.setFeatures(activationTokenEntity.getUser(), new String[]{"create:session"});
+        return userService.activate(activationTokenEntity.getUser());
     }
 }

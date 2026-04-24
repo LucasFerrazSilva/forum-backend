@@ -1,9 +1,8 @@
 package com.ferraz.forumbackend.session;
 
-import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
+import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.infra.service.UserContext;
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.dto.SessionDTO;
 import jakarta.servlet.http.Cookie;
@@ -25,7 +24,6 @@ public class SessionController {
 
 
     @PostMapping
-    @RequiresFeature("create:session")
     public ResponseEntity<SessionDTO> getSession(@Valid @RequestBody LoginDTO loginDTO, HttpServletResponse response) {
         SessionEntity sessionEntity = sessionService.getSession(loginDTO);
 

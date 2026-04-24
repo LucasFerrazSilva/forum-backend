@@ -8,7 +8,7 @@ public class ForbiddenException extends BaseException {
                 "Você não tem autorização para consumir esse endpoint",
                 HttpStatus.FORBIDDEN.value(),
                 ForbiddenException.class.getSimpleName(),
-                "Verifique se o seu usuário tem as permissões necessárias"
+                "Entre em contato com o suporte para solicitar a permissão necessária"
         );
     }
 }

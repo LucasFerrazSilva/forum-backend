@@ -54,6 +54,10 @@ public class UserService {
         return userEntity;
     }
 
+    public UserEntity activate(UserEntity user) {
+        return this.setFeatures(user, new String[]{"create:session"});
+    }
+
     @Transactional
     public UserEntity setFeatures(UserEntity user, String[] features) {
         user.setFeatures(features);

@@ -1,5 +1,7 @@
 package com.ferraz.forumbackend.session;
 
+import com.ferraz.forumbackend.infra.exception.ForbiddenException;
+import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.exception.InvalidCredentialsException;
 import com.ferraz.forumbackend.user.UserEntity;
@@ -23,6 +25,7 @@ public class SessionService {
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthorizationService authorizationService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${server.cookie.expiration-days}")
@@ -32,6 +35,10 @@ public class SessionService {
     public SessionEntity getSession(LoginDTO loginDTO) {
         UserEntity user = userRepository.findFirstByEmail(loginDTO.email())
                 .orElseThrow(InvalidCredentialsException::new);
+
+        if (!authorizationService.can(user, "create:session")) {
+            throw new ForbiddenException();
+        }
 
         if (!passwordEncoder.matches(loginDTO.password(), user.getPassword())) {
             throw new InvalidCredentialsException();
