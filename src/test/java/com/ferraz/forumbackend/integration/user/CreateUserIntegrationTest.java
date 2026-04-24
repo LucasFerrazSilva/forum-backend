@@ -3,11 +3,13 @@ package com.ferraz.forumbackend.integration.user;
 import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.infra.exception.InvalidField;
 import com.ferraz.forumbackend.integration.AbstractIntegrationTest;
+import com.ferraz.forumbackend.session.SessionRepository;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserRepository;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UserDTO;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,10 +34,14 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @AfterEach
     void afterEach() {
+        sessionRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -146,6 +152,24 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
         assertThat(errorResponse.getInvalidFields().getFirst().field()).isEqualTo("username");
         assertThat(errorResponse.getInvalidFields().getFirst().message())
                 .isEqualTo("O username %s já está cadastrado".formatted(existingUser.getUsername()));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 403 (Forbidden) quando fizer um POST no endpoint '/api/v1/users' enviando um cookie de sessao valido")
+    void shouldReturn403WhenUsersEndpointIsCalledWithPostWithValidSessionCookie() throws Exception {
+        Cookie sessionCookie = sessionFixture.cookie();
+        NewUserDTO newUserDTO = userFixture.newUserDTO();
+
+        MockHttpServletResponse response =
+                POST().withSessionCookie(sessionCookie).withRequestBody(newUserDTO).send();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(response.getContentAsString()).isNotBlank();
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(errorResponse.getMessage()).isEqualTo("Você não tem autorização para consumir esse endpoint");
+        assertThat(errorResponse.getAction()).isEqualTo("Entre em contato com o suporte para solicitar a permissão necessária");
     }
 
 }

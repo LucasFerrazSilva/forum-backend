@@ -1,5 +1,7 @@
 package com.ferraz.forumbackend.user;
 
+import com.ferraz.forumbackend.infra.exception.ForbiddenException;
+import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.exception.UsernameNotFoundException;
@@ -23,6 +25,7 @@ public class UserService {
     private final List<InsertUserValidator> insertUserValidators;
     private final List<UpdateUserValidator> updateUserValidators;
     private final PasswordEncoder passwordEncoder;
+    private final AuthorizationService authorizationService;
 
     @Transactional
     public UserEntity insert(NewUserDTO newUserDTO) {
@@ -55,6 +58,9 @@ public class UserService {
     }
 
     public UserEntity activate(UserEntity user) {
+        if (!authorizationService.can(user, "read:activation_token")) {
+            throw new ForbiddenException();
+        }
         return this.setFeatures(user, new String[]{"create:session", "read:session"});
     }
 

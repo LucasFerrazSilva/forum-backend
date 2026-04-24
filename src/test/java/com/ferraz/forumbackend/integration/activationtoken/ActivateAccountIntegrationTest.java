@@ -42,7 +42,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 200 (OK) com o usuário ativado quando o token for válido")
     void shouldReturn200AndActivateUserWhenTokenIsValid() throws Exception {
-        UserEntity user = userFixture.user();
+        UserEntity user = userFixture.user(c -> c.activated(false));
         ActivationTokenEntity token = activationTokenFixture.token(user);
 
         MockHttpServletResponse response = GET().withEndpoint(getEndpoint() + token.getId()).send();
@@ -61,7 +61,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
 
         Optional<UserEntity> updatedUser = userRepository.findById(user.getId());
         assertThat(updatedUser).isPresent();
-        assertThat(updatedUser.get().getFeatures()).contains("create:session");
+        assertThat(updatedUser.get().getFeatures()).containsExactly("create:session", "read:session");
     }
 
     @Test
@@ -110,7 +110,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 404 (Not Found) quando o token já foi utilizado numa segunda tentativa de ativação")
     void shouldReturn404OnSecondActivationAttempt() throws Exception {
-        UserEntity user = userFixture.user();
+        UserEntity user = userFixture.user(c -> c.activated(false));
         ActivationTokenEntity token = activationTokenFixture.token(user);
 
         // Primeira ativação — deve funcionar
@@ -123,6 +123,19 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
         ErrorResponse errorResponse = extractObject(secondResponse, ErrorResponse.class);
         assertThat(errorResponse).isNotNull();
         assertThat(errorResponse.getMessage()).contains("Código de ativação inválido");
+    }
+
+    @Test
+    @DisplayName("Deve retornar 403 (Forbidden) quando tentar ativar um usuário já ativo")
+    void shouldReturn404WhenTryToActivateAnAlreadyActivatedUser() throws Exception {
+        UserEntity user = userFixture.user();
+        ActivationTokenEntity token = activationTokenFixture.token(user);
+
+        MockHttpServletResponse firstResponse = GET().withEndpoint(getEndpoint() + token.getId()).send();
+
+        assertThat(firstResponse.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        ActivationTokenEntity activationTokenEntity = activationTokenRepository.findById(token.getId()).get();
+        assertThat(activationTokenEntity.getUsedAt()).isNull();
     }
 
 }

@@ -33,7 +33,9 @@ public class UserFixture {
         customizer.accept(newUserDTOBuilder);
         NewUserDTO user = newUserDTOBuilder.build();
         UserEntity userEntity = userService.insert(user);
-        userService.activate(userEntity);
+        if (newUserDTOBuilder.shouldActivate()) {
+            userService.activate(userEntity);
+        }
         return userEntity;
     }
 
@@ -53,9 +55,20 @@ public class UserFixture {
         private String username = rand + "username";
         private String email = rand + "mail@domain.com";
         private String password = "password";
+        private boolean activated = true;
+
+
+        public boolean shouldActivate() {
+            return activated;
+        }
 
         public NewUserDTOBuilder username(String username) {
             this.username = username;
+            return this;
+        }
+
+        public NewUserDTOBuilder activated(boolean activated) {
+            this.activated = activated;
             return this;
         }
 

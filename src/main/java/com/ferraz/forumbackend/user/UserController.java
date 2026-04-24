@@ -29,6 +29,7 @@ public class UserController {
     private final AuthorizationService authorizationService;
 
     @PostMapping
+    @RequiresFeature("create:user")
     public ResponseEntity<UserDTO> insert(@Valid @RequestBody NewUserDTO newUserDTO) {
         UserEntity userEntity = userService.insert(newUserDTO);
         ActivationTokenEntity activationTokenEntity = activationTokenService.create(userEntity);

@@ -1,6 +1,8 @@
 package com.ferraz.forumbackend.activationtoken;
 
 import com.ferraz.forumbackend.activationtoken.exception.InvalidActivationTokenException;
+import com.ferraz.forumbackend.infra.exception.ForbiddenException;
+import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.infra.service.EmailService;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserService;
@@ -55,16 +57,20 @@ public class ActivationTokenService {
     @Transactional
     public UserEntity activate(UUID id) {
         ActivationTokenEntity activationTokenEntity =
-                activationTokenRepository.findById(id).orElseThrow(() -> new InvalidActivationTokenException(id));
-        if (activationTokenEntity.getUsedAt() != null) {
+                activationTokenRepository.findById(id)
+                        .orElseThrow(() -> new InvalidActivationTokenException(id));
+
+        if (activationTokenEntity.getUsedAt() != null
+        || activationTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new InvalidActivationTokenException(id);
         }
-        if (activationTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidActivationTokenException(id);
-        }
+
+        UserEntity user = userService.activate(activationTokenEntity.getUser());
+
         activationTokenEntity.setUsedAt(LocalDateTime.now());
         activationTokenEntity.setUpdatedAt(LocalDateTime.now());
         activationTokenRepository.save(activationTokenEntity);
-        return userService.activate(activationTokenEntity.getUser());
+
+        return user;
     }
 }

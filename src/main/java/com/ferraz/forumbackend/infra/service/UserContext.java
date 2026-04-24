@@ -5,8 +5,7 @@ import com.ferraz.forumbackend.user.UserEntity;
 
 public class UserContext {
 
-    private static final String[] ANONYMOUS_USER_FEATURES =
-            new String[]{"read:activation_token", "create:session", "create:user"};
+    private static final String[] ANONYMOUS_USER_FEATURES = new String[]{"create:user"};
 
     private static final ThreadLocal<Boolean> isAnonymousSession = new ThreadLocal<>();
     private static final ThreadLocal<SessionEntity> currentSession = new ThreadLocal<>();

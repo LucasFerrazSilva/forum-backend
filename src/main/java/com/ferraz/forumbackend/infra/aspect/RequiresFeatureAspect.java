@@ -19,11 +19,11 @@ public class RequiresFeatureAspect {
 
     @Before("@annotation(requiresFeature)")
     public void checkFeature(RequiresFeature requiresFeature) {
-        if (UserContext.isAnonymousSession()) {
-            throw new UnauthorizedException();
-        }
-
         if (!authorizationService.loggedUserCan(requiresFeature.value())) {
+            if (UserContext.isAnonymousSession()) {
+                throw new UnauthorizedException();
+            }
+
             throw new ForbiddenException();
         }
     }
