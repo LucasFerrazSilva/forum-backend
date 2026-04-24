@@ -51,15 +51,16 @@ Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing.
 |---|---|
 | Anonymous (no session) | `["create:user"]` (virtual, via `UserContext`) |
 | After registration | `["read:activation_token"]` |
-| After account activation | `["create:session", "read:session"]` |
+| After account activation | `["create:session", "read:session", "delete:session"]` |
 
 - `POST /api/v1/users` requires `"create:user"` (available to anonymous users).
 - `POST /api/v1/sessions` (login) checks that the user has `"create:session"` — unactivated accounts cannot log in.
 - `GET /api/v1/users` (current user) requires `"read:session"`.
+- `DELETE /api/v1/sessions` (logout) requires `"delete:session"`.
 - Future permissions follow the same pattern: add a feature string and annotate the endpoint with `@RequiresFeature("feature:name")`.
 
 ### Account Activation Flow
-`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and replaces the user's features with `["create:session", "read:session"]` (via `UserService.activate`). Tokens are single-use and expire; any invalid attempt throws `InvalidActivationTokenException`.
+`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and replaces the user's features with `["create:session", "read:session", "delete:session"]` (via `UserService.activate`). Tokens are single-use and expire; any invalid attempt throws `InvalidActivationTokenException`.
 
 ### Database
 Hibernate `ddl-auto: validate` — schema is managed **only** via Flyway migrations in `src/main/resources/db/migration/`.  
@@ -209,7 +210,7 @@ When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` 
 | `GET` | `/api/v1/users` | Get current user via session cookie |
 | `POST` | `/api/v1/sessions` | Login (sets `session_id` cookie) |
 | `DELETE` | `/api/v1/sessions` | Logout |
-| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `["create:session", "read:session"]` features) |
+| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `["create:session", "read:session", "delete:session"]` features) |
 | `GET` | `/actuator/...` | Spring Actuator (status/info) |
 
 ## Key Files

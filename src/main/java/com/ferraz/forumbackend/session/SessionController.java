@@ -1,6 +1,6 @@
 package com.ferraz.forumbackend.session;
 
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
+import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
 import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.infra.service.UserContext;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
@@ -35,10 +35,8 @@ public class SessionController {
     }
 
     @DeleteMapping
+    @RequiresFeature("delete:session")
     public ResponseEntity<Void> deleteSession(HttpServletRequest request, HttpServletResponse response) {
-        if (UserContext.isAnonymousSession()) {
-            throw new UnauthorizedException();
-        }
         sessionService.inactivate(UserContext.getSession());
         Cookie sessionCookie = cookieService.extractSessionCookie(request);
         response.addCookie(cookieService.createExpiredSessionCookie(sessionCookie.getValue()));

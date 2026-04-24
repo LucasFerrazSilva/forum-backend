@@ -61,7 +61,7 @@ public class UserService {
         if (!authorizationService.can(user, "read:activation_token")) {
             throw new ForbiddenException();
         }
-        return this.setFeatures(user, new String[]{"create:session", "read:session"});
+        return this.setFeatures(user, new String[]{"create:session", "read:session", "delete:session"});
     }
 
     @Transactional

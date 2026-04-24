@@ -4,7 +4,10 @@ import com.ferraz.forumbackend.infra.exception.ErrorResponse;
 import com.ferraz.forumbackend.integration.AbstractIntegrationTest;
 import com.ferraz.forumbackend.session.SessionEntity;
 import com.ferraz.forumbackend.session.SessionRepository;
+import com.ferraz.forumbackend.session.dto.LoginDTO;
+import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserRepository;
+import com.ferraz.forumbackend.user.UserService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,13 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 class DeleteSessionIntegrationTest extends AbstractIntegrationTest {
 
     @Override
@@ -32,6 +33,9 @@ class DeleteSessionIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SessionRepository sessionRepository;
+
+    @Autowired
+    private UserService userService;
 
     @AfterEach
     void afterEach() {
@@ -75,6 +79,25 @@ class DeleteSessionIntegrationTest extends AbstractIntegrationTest {
         Optional<SessionEntity> sessionOptional =
                 sessionRepository.findFirstByTokenAndExpiresAtAfter(sessionCookie.getValue(), LocalDateTime.now());
         assertThat(sessionOptional).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Deve retornar 403 (Forbidden) quando o usuário autenticado não tiver a feature 'delete:session'")
+    void shouldReturn403WhenAuthenticatedUserLacksDeleteSessionFeature() throws Exception {
+        String senhaValida = "SenhaValida";
+        UserEntity user = userFixture.user(b -> b.password(senhaValida).activated(false));
+        userService.setFeatures(user, new String[]{"create:session", "read:session"});
+
+        LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
+        Cookie sessionCookie = sessionFixture.cookie(loginDTO);
+
+        MockHttpServletResponse response = DELETE().withSessionCookie(sessionCookie).send();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        ErrorResponse errorResponse = extractObject(response, ErrorResponse.class);
+        assertThat(errorResponse).isNotNull();
+        assertThat(errorResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(errorResponse.getName()).isEqualTo("ForbiddenException");
     }
 
 }

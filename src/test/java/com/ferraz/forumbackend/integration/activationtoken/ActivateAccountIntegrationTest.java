@@ -61,7 +61,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
 
         Optional<UserEntity> updatedUser = userRepository.findById(user.getId());
         assertThat(updatedUser).isPresent();
-        assertThat(updatedUser.get().getFeatures()).containsExactly("create:session", "read:session");
+        assertThat(updatedUser.get().getFeatures()).containsExactly("create:session", "read:session", "delete:session");
     }
 
     @Test
