@@ -1,6 +1,7 @@
 package com.ferraz.forumbackend.unit.status;
 
 import com.ferraz.forumbackend.infra.exception.DatabaseException;
+import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.status.StatusController;
 import com.ferraz.forumbackend.status.StatusService;
 import org.junit.jupiter.api.Assertions;
@@ -18,6 +19,9 @@ class StatusControllerTest {
 
     @Mock
     private StatusService statusService;
+
+    @Mock
+    private AuthorizationService authorizationService;
 
     @InjectMocks
     private StatusController statusController;
