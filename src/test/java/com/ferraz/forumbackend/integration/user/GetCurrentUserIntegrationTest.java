@@ -61,7 +61,7 @@ class GetCurrentUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um GET no endpoint '/api/v1/users/' enviando cookie de sessão expirado")
     void shouldReturn401WhenUsersEndpointIsCalledWithGetAndExpiredSessionCookie() throws Exception {
         String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida));
+        UserEntity user = userFixture.user(b -> b.withPassword(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
         Cookie sessionCookie = sessionFixture.cookie(loginDTO);
@@ -108,7 +108,7 @@ class GetCurrentUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um GET no endpoint '/api/v1/users/' enviando cookie inativado")
     void shouldReturn401WhenUsersEndpointIsCalledWithGetAndInvalidatedSessionCookie() throws Exception {
         String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida));
+        UserEntity user = userFixture.user(b -> b.withPassword(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
         Cookie sessionCookie = sessionFixture.cookie(loginDTO);
@@ -138,7 +138,7 @@ class GetCurrentUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 200 (Ok) quando fizer um GET no endpoint '/api/v1/users' com um cookie de sessão válido")
     void shouldReturn200WhenUsersEndpointIsCalledWithGetAndValidSessionCookie() throws Exception {
         String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida));
+        UserEntity user = userFixture.user(b -> b.withPassword(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
         Cookie sessionCookie = sessionFixture.cookie(loginDTO);

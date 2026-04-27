@@ -95,7 +95,7 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' sem enviar os campos necessários")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithoutRequiredFields() throws Exception {
         NewUserDTO newUserDTO =
-                userFixture.newUserDTO(u -> u.username("").email(" ").password(null));
+                userFixture.newUserDTO(u -> u.withUsername("").withEmail(" ").withPassword(null));
 
         MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
@@ -114,10 +114,10 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' usando um email ja cadastrado")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithNonUniqueEmail() throws Exception {
         UserEntity existingUser =
-                userFixture.user(u -> u.email("Email@domain.com"));
+                userFixture.user(u -> u.withEmail("Email@domain.com"));
 
         NewUserDTO newUserDTO =
-                userFixture.newUserDTO(u -> u.email(existingUser.getEmail().toLowerCase()));
+                userFixture.newUserDTO(u -> u.withEmail(existingUser.getEmail().toLowerCase()));
 
         MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 
@@ -136,10 +136,10 @@ class CreateUserIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 400 (Bad Request) quando fizer um POST no endpoint '/api/v1/users' usando um username ja cadastrado")
     void shouldReturn400WhenUsersEndpointIsCalledWithPostWithNonUniqueUsername() throws Exception {
         UserEntity existingUser =
-                userFixture.user(u -> u.username("NonUniqueUsername"));
+                userFixture.user(u -> u.withUsername("NonUniqueUsername"));
 
         NewUserDTO newUserDTO =
-                userFixture.newUserDTO(u -> u.username(existingUser.getUsername().toLowerCase()));
+                userFixture.newUserDTO(u -> u.withUsername(existingUser.getUsername().toLowerCase()));
 
         MockHttpServletResponse response = POST().withRequestBody(newUserDTO).send();
 

@@ -18,7 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -79,7 +78,7 @@ class CreateSessionIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 401 (Unauthorized) quando fizer um POST no endpoint '/api/v1/sessions' enviando senha valida mas email incorreto")
     void shouldReturn401WhenSessionsEndpointIsCalledWithPostWithValidPasswordAndInvalidEmail() throws Exception {
         String senhaValida = "SenhaValida";
-        userFixture.user(b -> b.password(senhaValida));
+        userFixture.user(b -> b.withPassword(senhaValida));
         LoginDTO loginDTO = new LoginDTO("EmailIncorreto@mail.com", senhaValida);
 
         MockHttpServletResponse response = POST().withRequestBody(loginDTO).send();
@@ -110,7 +109,7 @@ class CreateSessionIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 201 (Created) quando fizer um POST no endpoint '/api/v1/sessions' enviando dados validos")
     void shouldReturn201WhenSessionsEndpointIsCalledWithPostWithValidData() throws Exception {
         String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida));
+        UserEntity user = userFixture.user(b -> b.withPassword(senhaValida));
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);
 
         MockHttpServletResponse response = POST().withRequestBody(loginDTO).send();

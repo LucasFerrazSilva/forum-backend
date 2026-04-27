@@ -24,7 +24,7 @@ public class SessionFixture {
     public SessionEntity session(LoginDTO loginDTO) {
         if (loginDTO == null) {
             String senhaValida = "SenhaValida";
-            UserEntity user = userFixture.user(b -> b.password(senhaValida));
+            UserEntity user = userFixture.user(b -> b.withPassword(senhaValida));
             loginDTO = new LoginDTO(user.getEmail(), senhaValida);
         }
 

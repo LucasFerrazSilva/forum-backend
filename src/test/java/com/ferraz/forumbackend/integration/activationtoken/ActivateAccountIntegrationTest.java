@@ -42,7 +42,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 200 (OK) com o usuário ativado quando o token for válido")
     void shouldReturn200AndActivateUserWhenTokenIsValid() throws Exception {
-        UserEntity user = userFixture.user(c -> c.activated(false));
+        UserEntity user = userFixture.user(c -> c.withActivated(false));
         ActivationTokenEntity token = activationTokenFixture.token(user);
 
         MockHttpServletResponse response = GET().withEndpoint(getEndpoint() + token.getId()).send();
@@ -61,7 +61,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
 
         Optional<UserEntity> updatedUser = userRepository.findById(user.getId());
         assertThat(updatedUser).isPresent();
-        assertThat(updatedUser.get().getFeatures()).containsExactly("create:session", "read:session", "delete:session");
+        assertThat(updatedUser.get().getFeatures()).containsExactly("create:session", "read:session", "delete:session", "update:user");
     }
 
     @Test
@@ -110,7 +110,7 @@ class ActivateAccountIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Deve retornar 404 (Not Found) quando o token já foi utilizado numa segunda tentativa de ativação")
     void shouldReturn404OnSecondActivationAttempt() throws Exception {
-        UserEntity user = userFixture.user(c -> c.activated(false));
+        UserEntity user = userFixture.user(c -> c.withActivated(false));
         ActivationTokenEntity token = activationTokenFixture.token(user);
 
         // Primeira ativação — deve funcionar

@@ -43,8 +43,8 @@ public class MvcRequestBuilder {
         return this;
     }
 
-    public MvcRequestBuilder shouldAuthenticateWithNewUser(boolean authenticateWithNewUser) {
-        this.authenticateWithNewUser = authenticateWithNewUser;
+    public MvcRequestBuilder withDefaultUser() {
+        this.authenticateWithNewUser = true;
         return this;
     }
 

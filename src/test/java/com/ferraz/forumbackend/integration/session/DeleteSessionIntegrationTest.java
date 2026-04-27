@@ -85,7 +85,7 @@ class DeleteSessionIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Deve retornar 403 (Forbidden) quando o usuário autenticado não tiver a feature 'delete:session'")
     void shouldReturn403WhenAuthenticatedUserLacksDeleteSessionFeature() throws Exception {
         String senhaValida = "SenhaValida";
-        UserEntity user = userFixture.user(b -> b.password(senhaValida).activated(false));
+        UserEntity user = userFixture.user(b -> b.withPassword(senhaValida).withActivated(false));
         userService.setFeatures(user, new String[]{"create:session", "read:session"});
 
         LoginDTO loginDTO = new LoginDTO(user.getEmail(), senhaValida);

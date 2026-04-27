@@ -2,6 +2,7 @@ package com.ferraz.forumbackend.user;
 
 import com.ferraz.forumbackend.infra.exception.ForbiddenException;
 import com.ferraz.forumbackend.infra.service.AuthorizationService;
+import com.ferraz.forumbackend.infra.service.UserContext;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import com.ferraz.forumbackend.user.exception.UsernameNotFoundException;
@@ -13,7 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static org.springframework.util.StringUtils.hasText;
 
@@ -42,6 +44,12 @@ public class UserService {
     @Transactional
     public UserEntity update(String username, UpdateUserDTO updateUserDTO) {
         UserEntity userEntity = this.findByUsername(username);
+
+        UserEntity loggedUser = UserContext.getUser();
+        if (!loggedUser.getId().equals(userEntity.getId()) && !authorizationService.can(loggedUser, "update:user:other")) {
+            throw new ForbiddenException("Você não tem autorização para atualizar outro usuário");
+        }
+
         updateUserValidators.forEach(validator -> validator.validate(username, updateUserDTO));
         if (hasText(updateUserDTO.username())) {
             userEntity.setUsername(updateUserDTO.username());
@@ -61,7 +69,10 @@ public class UserService {
         if (!authorizationService.can(user, "read:activation_token")) {
             throw new ForbiddenException();
         }
-        return this.setFeatures(user, new String[]{"create:session", "read:session", "delete:session"});
+        return this.setFeatures(user, new String[]{
+                "create:session", "read:session", "delete:session",
+                "update:user"
+        });
     }
 
     @Transactional
@@ -69,6 +80,17 @@ public class UserService {
         user.setFeatures(features);
         user.setUpdatedAt(LocalDateTime.now());
         return userRepository.save(user);
+    }
+
+    public UserEntity addFeatures(UserEntity user, String[] newFeatures) {
+        user = userRepository.findById(user.getId()).orElseThrow();
+
+        String[] allFeatures = Stream.concat(
+                Arrays.stream(user.getFeatures()),
+                Arrays.stream(newFeatures)
+        ).distinct().toArray(String[]::new);
+
+        return setFeatures(user, allFeatures);
     }
 
 }

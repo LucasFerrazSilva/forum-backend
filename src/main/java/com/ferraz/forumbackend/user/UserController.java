@@ -3,6 +3,7 @@ package com.ferraz.forumbackend.user;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenEntity;
 import com.ferraz.forumbackend.activationtoken.ActivationTokenService;
 import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
+import com.ferraz.forumbackend.infra.exception.ForbiddenException;
 import com.ferraz.forumbackend.infra.service.AuthorizationService;
 import com.ferraz.forumbackend.infra.service.CookieService;
 import com.ferraz.forumbackend.infra.service.UserContext;
@@ -47,6 +48,7 @@ public class UserController {
     }
 
     @PatchMapping("/{username}")
+    @RequiresFeature("update:user")
     public ResponseEntity<UserDTO> update(@PathVariable String username, @RequestBody UpdateUserDTO updateUserDTO) {
         UserEntity userEntity = userService.update(username, updateUserDTO);
         UserDTO userDTO = UserMapper.toDTO(userEntity);

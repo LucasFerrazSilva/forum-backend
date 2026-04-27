@@ -1,10 +1,12 @@
 package com.ferraz.forumbackend.integration.fixture;
 
+import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.user.UserEntity;
 import com.ferraz.forumbackend.user.UserService;
 import com.ferraz.forumbackend.user.dto.NewUserDTO;
 import com.ferraz.forumbackend.user.dto.UpdateUserDTO;
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -31,10 +33,13 @@ public class UserFixture {
     public UserEntity user(Consumer<NewUserDTOBuilder> customizer) {
         NewUserDTOBuilder newUserDTOBuilder = new NewUserDTOBuilder();
         customizer.accept(newUserDTOBuilder);
-        NewUserDTO user = newUserDTOBuilder.build();
-        UserEntity userEntity = userService.insert(user);
+        NewUserDTO newUserDTO = newUserDTOBuilder.build();
+        UserEntity userEntity = userService.insert(newUserDTO);
         if (newUserDTOBuilder.shouldActivate()) {
             userService.activate(userEntity);
+        }
+        if (newUserDTOBuilder.getFeatures() != null) {
+            userService.addFeatures(userEntity, newUserDTOBuilder.getFeatures());
         }
         return userEntity;
     }
@@ -56,28 +61,41 @@ public class UserFixture {
         private String email = rand + "mail@domain.com";
         private String password = "password";
         private boolean activated = true;
+        @Getter
+        private String[] features = null;
 
 
         public boolean shouldActivate() {
             return activated;
         }
 
-        public NewUserDTOBuilder username(String username) {
+        public NewUserDTOBuilder withUsername(String username) {
             this.username = username;
             return this;
         }
 
-        public NewUserDTOBuilder activated(boolean activated) {
+        public NewUserDTOBuilder withFeatures(String[] features) {
+            this.features = features;
+            return this;
+        }
+
+        public NewUserDTOBuilder withLoginDTO(LoginDTO loginDTO) {
+            this.email = loginDTO.email();
+            this.password = loginDTO.password();
+            return this;
+        }
+
+        public NewUserDTOBuilder withActivated(boolean activated) {
             this.activated = activated;
             return this;
         }
 
-        public NewUserDTOBuilder email(String email) {
+        public NewUserDTOBuilder withEmail(String email) {
             this.email = email;
             return this;
         }
 
-        public NewUserDTOBuilder password(String password) {
+        public NewUserDTOBuilder withPassword(String password) {
             this.password = password;
             return this;
         }
