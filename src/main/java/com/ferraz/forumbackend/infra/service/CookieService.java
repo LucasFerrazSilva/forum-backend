@@ -1,6 +1,5 @@
-package com.ferraz.forumbackend.infra;
+package com.ferraz.forumbackend.infra.service;
 
-import com.ferraz.forumbackend.infra.exception.UnauthorizedException;
 import com.ferraz.forumbackend.session.SessionEntity;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,42 +21,31 @@ public class CookieService {
 
 
     public Cookie createSessionCookie(SessionEntity sessionEntity) {
-        Cookie cookie = new Cookie(cookieName, sessionEntity.getToken());
+        int maxAge = (int) Duration.between(LocalDateTime.now(), sessionEntity.getExpiresAt()).getSeconds();
+        return createSessionCookie(sessionEntity.getToken(), maxAge);
+    }
+
+    public Cookie createExpiredSessionCookie(String token) {
+        return createSessionCookie(token, 0);
+    }
+
+    private Cookie createSessionCookie(String token, int maxAge) {
+        Cookie cookie = new Cookie(cookieName, token);
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
         cookie.setPath("/");
-
-        if (sessionEntity.getExpiresAt().isAfter(LocalDateTime.now())) {
-            long maxAge = Duration.between(LocalDateTime.now(), sessionEntity.getExpiresAt()).getSeconds();
-            cookie.setMaxAge((int) maxAge);
-        } else {
-            cookie.setMaxAge(0);
-        }
-
+        cookie.setMaxAge(maxAge);
         return cookie;
     }
 
-    public Cookie createExpiredSessionCookie() {
-        Cookie cookie = new Cookie(cookieName, "invalid");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(cookieSecure);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-
-        return cookie;
-    }
-
-    public Cookie getSessionCookie(HttpServletRequest request) {
+    public Cookie extractSessionCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
-
         if (cookies == null || cookies.length == 0) {
-            throw new UnauthorizedException();
+            return null;
         }
-
         return Stream.of(cookies)
                         .filter(cookie -> cookieName.equals(cookie.getName()))
-                        .findAny()
-                        .orElseThrow(UnauthorizedException::new);
+                        .findAny().orElse(null);
     }
 
 }

@@ -8,6 +8,7 @@ public record UserDTO(
         String username,
         String email,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String[] features
 ) {
 }

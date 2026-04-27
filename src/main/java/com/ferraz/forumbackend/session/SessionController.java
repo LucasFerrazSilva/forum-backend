@@ -1,6 +1,8 @@
 package com.ferraz.forumbackend.session;
 
-import com.ferraz.forumbackend.infra.CookieService;
+import com.ferraz.forumbackend.infra.annotation.RequiresFeature;
+import com.ferraz.forumbackend.infra.service.CookieService;
+import com.ferraz.forumbackend.infra.service.UserContext;
 import com.ferraz.forumbackend.session.dto.LoginDTO;
 import com.ferraz.forumbackend.session.dto.SessionDTO;
 import jakarta.servlet.http.Cookie;
@@ -24,19 +26,20 @@ public class SessionController {
     @PostMapping
     public ResponseEntity<SessionDTO> getSession(@Valid @RequestBody LoginDTO loginDTO, HttpServletResponse response) {
         SessionEntity sessionEntity = sessionService.getSession(loginDTO);
-        SessionDTO sessionDTO = new SessionDTO(sessionEntity.getToken());
 
         Cookie cookie = cookieService.createSessionCookie(sessionEntity);
         response.addCookie(cookie);
 
+        SessionDTO sessionDTO = new SessionDTO(sessionEntity.getToken());
         return ResponseEntity.status(HttpStatus.CREATED.value()).body(sessionDTO);
     }
 
     @DeleteMapping
+    @RequiresFeature("delete:session")
     public ResponseEntity<Void> deleteSession(HttpServletRequest request, HttpServletResponse response) {
-        Cookie sessionCookie = cookieService.getSessionCookie(request);
-        sessionService.inactivate(sessionCookie.getValue());
-        response.addCookie(cookieService.createExpiredSessionCookie());
+        sessionService.inactivate(UserContext.getSession());
+        Cookie sessionCookie = cookieService.extractSessionCookie(request);
+        response.addCookie(cookieService.createExpiredSessionCookie(sessionCookie.getValue()));
         return ResponseEntity.noContent().build();
     }
 

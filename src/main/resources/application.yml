@@ -35,7 +35,7 @@ spring:
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
+    username: ${MAIL_USERNAME:contato@forum.com}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -52,6 +52,9 @@ security:
   rounds: ${PASSWORD_ROUNDS:14}
 
 server:
+  activation-token:
+    base-url: ${ACTIVATION_TOKEN_BASE_URL:http://localhost:8080}
+    expiration-days: ${ACTIVATION_TOKEN_EXPIRATION_DAYS:7}
   cookie:
     name: session_id
     secure: ${COOKIE_SECURE:false}

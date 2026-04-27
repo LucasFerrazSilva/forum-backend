@@ -7,27 +7,60 @@ Spring Boot 4 REST API (Java 21) for a forum platform. Uses PostgreSQL with Flyw
 ```
 com.ferraz.forumbackend
 ├── infra/
-│   ├── exception/   # Global error handling (ExceptionsHandler, BaseException hierarchy)
-│   └── security/    # CustomPasswordEncoder (BCrypt + pepper), CorsConfiguration
-├── user/            # UserEntity, UserController, UserService, UserRepository, UserMapper
-├── session/         # SessionEntity, SessionController, SessionService, SessionRepository
-└── status/          # Health/status endpoint
+│   ├── annotation/       # @RequiresFeature — method-level authorization annotation
+│   ├── aspect/           # RequiresFeatureAspect — enforces @RequiresFeature via AOP
+│   ├── exception/        # Global error handling (ExceptionsHandler, BaseException hierarchy)
+│   ├── filter/           # SessionFilter — OncePerRequestFilter that populates UserContext per request
+│   ├── security/         # CustomPasswordEncoder (BCrypt + pepper), CorsConfiguration
+│   └── service/          # CookieService, EmailService, AuthorizationService, UserContext
+├── activationtoken/      # ActivationTokenEntity, Controller, Service, Repository + InvalidActivationTokenException
+├── user/
+│   ├── validator/        # InsertUserValidator, UpdateUserValidator interfaces + implementations
+│   └── ...               # UserEntity, UserController, UserService, UserRepository, UserMapper
+├── session/              # SessionEntity, SessionController, SessionService, SessionRepository
+└── status/               # StatusController, StatusService, StatusDAO, entity/ (StatusDTO, DatabaseInfo)
 ```
 Each domain is self-contained (entity, controller, service, repository, DTOs, exceptions in one package).
 
 ## Key Patterns
 
 ### Error Handling
-Throw subclasses of `BaseException` (e.g., `NotFoundException`, `DatabaseException`, `ValidationException`).  
+Throw subclasses of `BaseException` (e.g., `NotFoundException`, `DatabaseException`, `ValidationException`, `UnauthorizedException`, `ForbiddenException`).  
 `ExceptionsHandler` (`@RestControllerAdvice`) catches all and returns `ErrorResponse`.  
 Never throw raw `RuntimeException` — always use a typed `BaseException` subclass.
 
 ### DTOs & Mapping
 Use static methods in `UserMapper` (e.g., `UserMapper.toDTO(entity)`). No MapStruct. DTOs live in `<domain>/dto/`.
 
+### Validation
+`UserService` injects `List<InsertUserValidator>` and `List<UpdateUserValidator>` — add a validator by implementing the interface and annotating it `@Component`. Validators throw `BaseException` subclasses (never return booleans). Examples: `UniqueEmailValidator`, `UniqueUsernameValidator`, `UsernameExistsValidator` in `user/validator/`.
+
 ### Authentication
 Login → `POST /api/v1/sessions` returns `session_id` as an HTTP-only cookie. Token stored in `TB_SESSIONS` with expiry.  
-Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing. Requires `security.pepper` env var (no default).
+Cookie lifecycle is managed by `CookieService` (create, expire, extract from request). Cookie name is configured via `server.cookie.name` (`session_id`).  
+Password: `CustomPasswordEncoder` applies a pepper suffix before BCrypt hashing. Requires `security.pepper` env var (defaults to literal `"PASSWORD_PEPPER"` in dev — **set a real value in production**).
+
+**Request lifecycle:** `SessionFilter` (`OncePerRequestFilter`, `@Order(HIGHEST_PRECEDENCE)`) runs on every request — reads the session cookie, looks up the session in `TB_SESSIONS`, and stores the result in `UserContext` (thread-local). Unauthenticated requests get an anonymous `UserContext` with features `["create:user"]`. `UserContext.clear()` is always called in the `finally` block.
+
+**Authorization:** Annotate controller methods with `@RequiresFeature("feature:name")`. `RequiresFeatureAspect` intercepts the call before execution and uses `AuthorizationService.loggedUserCan()` to check the current user's features. Throws `UnauthorizedException` (401) if the request is anonymous, `ForbiddenException` (403) if authenticated but lacking the feature.
+
+### User Features
+`UserEntity` has a `String[] features` column that gates access to endpoints and actions. The full lifecycle:
+
+| Stage | Features set |
+|---|---|
+| Anonymous (no session) | `["create:user"]` (virtual, via `UserContext`) |
+| After registration | `["read:activation_token"]` |
+| After account activation | `["create:session", "read:session", "delete:session"]` |
+
+- `POST /api/v1/users` requires `"create:user"` (available to anonymous users).
+- `POST /api/v1/sessions` (login) checks that the user has `"create:session"` — unactivated accounts cannot log in.
+- `GET /api/v1/users` (current user) requires `"read:session"`.
+- `DELETE /api/v1/sessions` (logout) requires `"delete:session"`.
+- Future permissions follow the same pattern: add a feature string and annotate the endpoint with `@RequiresFeature("feature:name")`.
+
+### Account Activation Flow
+`POST /api/v1/users` → creates user → creates `ActivationTokenEntity` in `TB_ACTIVATION_TOKENS` → sends activation email (`EmailService`, async) with link to `GET /api/v1/activation-token/activate/{id}`. Activating marks `usedAt` on the token and replaces the user's features with `["create:session", "read:session", "delete:session"]` (via `UserService.activate`). Tokens are single-use and expire; any invalid attempt throws `InvalidActivationTokenException`.
 
 ### Database
 Hibernate `ddl-auto: validate` — schema is managed **only** via Flyway migrations in `src/main/resources/db/migration/`.  
@@ -39,10 +72,19 @@ Add new migrations as `V{n}__Description.sql`. Never alter existing migration fi
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/forum` | |
 | `DATABASE_USER` | `forum_user` | |
 | `DATABASE_PASSWORD` | `forum_password` | |
-| `PASSWORD_PEPPER` | *(none)* | **Required** — no default |
+| `PASSWORD_PEPPER` | `"PASSWORD_PEPPER"` | **Set a real value in production** |
 | `PASSWORD_ROUNDS` | `14` | BCrypt cost factor |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200,...` | |
 | `COOKIE_SECURE` | `false` | Set `true` in production |
+| `ACTIVATION_TOKEN_BASE_URL` | `http://localhost:8080` | Base URL prepended to activation links in emails |
+| `ACTIVATION_TOKEN_EXPIRATION_DAYS` | `7` | Days until an activation token expires |
+| `MAIL_HOST` | `localhost` | SMTP host |
+| `MAIL_PORT` | `1025` | SMTP port |
+| `MAIL_USERNAME` | `contato@forum.com` | From address for outgoing emails |
+| `MAIL_PASSWORD` | *(empty)* | SMTP password |
+| `MAIL_AUTH` | `false` | Enable SMTP auth |
+| `MAIL_TLS` | `false` | Enable STARTTLS |
+| `SHOW_SQL` | `true` | Log Hibernate SQL |
 
 ## Versioning
 
@@ -73,26 +115,120 @@ Docker Compose is auto-started by Spring Boot DevTools when running the app (`co
 - **Unit tests** (`src/test/.../unit/`): run with `./mvnw test` (Surefire, no DB needed)
 - **Integration tests** (`src/test/.../integration/`): run with `./mvnw verify` (Failsafe, uses Testcontainers PostgreSQL)
 - Integration tests extend `AbstractIntegrationTest`, which resets the DB via `flyway.clean()` + `flyway.migrate()` before each test class.
+- **One test class per endpoint per domain** — each class covers all scenarios for a single HTTP method + path combination (e.g., `CreateUserIntegrationTest`, `GetUserByUsernameIntegrationTest`).
 - Use `compose-all.yaml` for full-stack local runs; `compose.yaml` is for dev only.
+
+> **⚠️ Mandatory for every new feature:** tests are part of the feature — not optional.  
+> Every new endpoint or behaviour change **must** include corresponding unit and/or integration tests.  
+> After writing the tests, **run `./mvnw verify`** and confirm the full suite is green before considering the task done.  
+> Never deliver a feature without running the tests and confirming they pass.
 
 ### Coverage
 ```
 ./mvnw verify   # generates target/site/jacoco/jacoco.xml (used by SonarCloud)
 ```
 
+### CI/CD
+
+#### Workflows
+| File | Trigger | What it does |
+|---|---|---|
+| `sonar_workflow.yaml` | PR opened/updated | Runs `./mvnw verify` + SonarCloud analysis |
+| `pull_request_workflow.yaml` | PR merged to `main` | Builds JAR → Docker image tagged with `pom.xml` version → pushes to Docker Hub → deploys to VPS via SSH + `kubectl` |
+
+The Docker image tag is read directly from `pom.xml` at build time — **always bump the version before merging**.
+
+#### When to update CI/CD files after a code change
+
+After any change, check each item below:
+
+**Adding a new environment variable:**
+1. `k8s/app/app-deployment.yml` — add a new `env` entry reading from the appropriate k8s Secret (`security` for app config, `db-credentials` for database)
+2. `.github/workflows/pull_request_workflow.yaml` (deploy job):
+   - Add `VAR_NAME: ${{ secrets.VAR_NAME }}` to the `env:` block
+   - Add `VAR_NAME` to the `envs:` line of the `appleboy/ssh-action` step
+   - Add `--from-literal=VAR_NAME="$VAR_NAME"` to the `kubectl create secret generic security` command
+3. Create the corresponding GitHub Actions secret (see table below)
+
+**Adding a new k8s manifest** (`k8s/**`): add `kubectl apply -f` for the new file in the SSH script of `pull_request_workflow.yaml`, in the correct order (dependencies first).
+
+**No CI/CD changes needed** for: refactors, test additions, migration files, or changes that only affect existing env vars already wired up.
+
+#### GitHub Actions secrets — complete list
+
+These must exist in **Settings → Secrets and variables → Actions** of the repository:
+
+| Secret | Used in | Description |
+|---|---|---|
+| `DOCKER_USERNAME` | `pull_request_workflow.yaml` | Docker Hub username (image is pushed as `{username}/forum-backend`) |
+| `DOCKERHUB_TOKEN` | `pull_request_workflow.yaml` | Docker Hub access token (not the account password) |
+| `VPS_HOST` | `pull_request_workflow.yaml` | VPS hostname or IP address |
+| `VPS_USERNAME` | `pull_request_workflow.yaml` | SSH user on the VPS |
+| `VPS_SSH_KEY` | `pull_request_workflow.yaml` | Full PEM private key for SSH access to the VPS |
+| `VPS_PORT` | `pull_request_workflow.yaml` | SSH port on the VPS (usually `22`) |
+| `SONAR_TOKEN` | `sonar_workflow.yaml` | SonarCloud project token |
+| `PASSWORD_PEPPER` | `pull_request_workflow.yaml` → k8s `security` secret | BCrypt pepper — must match what the app was started with |
+| `MAIL_HOST` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP server hostname |
+| `MAIL_PORT` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP server port |
+| `MAIL_USERNAME` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP login / from address |
+| `MAIL_PASSWORD` | `pull_request_workflow.yaml` → k8s `security` secret | SMTP password |
+| `MAIL_AUTH` | `pull_request_workflow.yaml` → k8s `security` secret | `true` or `false` |
+| `MAIL_TLS` | `pull_request_workflow.yaml` → k8s `security` secret | `true` or `false` |
+| `ACTIVATION_TOKEN_BASE_URL` | `pull_request_workflow.yaml` → k8s `security` secret | Public base URL of the API (e.g. `https://api.forum.com`) — used in activation email links |
+| `ACTIVATION_TOKEN_EXPIRATION_DAYS` | `pull_request_workflow.yaml` → k8s `security` secret | Days until an activation token expires (e.g. `7`) |
+
+> Database credentials (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`) are stored directly in `k8s/secrets/db-credentials.yml` as base64-encoded values and applied via `kubectl apply` — they are **not** GitHub secrets.
+
+## Integration Test Structure
+Each domain has one test class per endpoint, all inside `src/test/java/.../integration/<domain>/`:
+
+| Class | Method | Path |
+|---|---|---|
+| `CreateUserIntegrationTest` | `POST` | `/api/v1/users` |
+| `GetUserByUsernameIntegrationTest` | `GET` | `/api/v1/users/{username}` |
+| `GetCurrentUserIntegrationTest` | `GET` | `/api/v1/users` (requires session cookie) |
+| `UpdateUserIntegrationTest` | `PATCH` | `/api/v1/users/{username}` |
+| `RegisterUserFlowIntegrationTest` | multi | End-to-end: register → activation email → activate → login |
+| `CreateSessionIntegrationTest` | `POST` | `/api/v1/sessions` |
+| `DeleteSessionIntegrationTest` | `DELETE` | `/api/v1/sessions` |
+| `ActivateAccountIntegrationTest` | `GET` | `/api/v1/activation-token/activate/{id}` |
+
+When adding a new endpoint, create a new `<Action><Domain>IntegrationTest.java` class in the matching domain package, extending `AbstractIntegrationTest`.
+
+### Test Infrastructure
+- **`TestcontainersConfig`** — spins up `postgres:17` and a `GreenMail` SMTP stub. Both are shared across all test classes (static, `withReuse(true)`).
+- **`AbstractIntegrationTest`** exposes `greenMail` (verify emails), `userFixture`, `sessionFixture`, `cookieName`. `@BeforeAll` resets DB; `@BeforeEach` purges GreenMail inbox.
+- **`MvcRequestBuilder`** — fluent builder for test HTTP calls. Use `GET()/POST()/PATCH()/DELETE()` from `AbstractIntegrationTest`, chain `.withRequestBody()`, `.shouldAuthenticateWithNewUser()`, `.withSessionCookie()`, then `.send()`.
+- **`UserFixture` / `SessionFixture` / `ActivationTokenFixture`** — create test data via inner builder classes (e.g., `userFixture.user(b -> b.username("alice"))`, `activationTokenFixture.token(user, b -> b.expiresAt(LocalDateTime.now().minusDays(1)))`). Use these instead of calling repositories directly.
+
 ## API Endpoints
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/v1/users` | Register user |
+| `POST` | `/api/v1/users` | Register user (also creates activation token + sends email) |
 | `GET` | `/api/v1/users/{username}` | Get user |
 | `PATCH` | `/api/v1/users/{username}` | Update user |
+| `GET` | `/api/v1/users` | Get current user via session cookie |
 | `POST` | `/api/v1/sessions` | Login (sets `session_id` cookie) |
+| `DELETE` | `/api/v1/sessions` | Logout |
+| `GET` | `/api/v1/activation-token/activate/{id}` | Activate account (sets `["create:session", "read:session", "delete:session"]` features) |
 | `GET` | `/actuator/...` | Spring Actuator (status/info) |
 
 ## Key Files
 - `src/main/resources/application.yml` — all config with env var defaults
 - `src/main/resources/db/migration/` — Flyway SQL migrations (source of truth for schema)
 - `src/test/java/.../integration/AbstractIntegrationTest.java` — base class for all integration tests
+- `src/test/java/.../integration/util/MvcRequestBuilder.java` — fluent HTTP test builder
+- `src/test/java/.../integration/fixture/UserFixture.java` — test user data factory
+- `src/test/java/.../integration/fixture/SessionFixture.java` — test session/cookie factory
+- `src/test/java/.../integration/fixture/ActivationTokenFixture.java` — test activation token factory
+- `src/test/java/.../integration/util/TestcontainersConfig.java` — Postgres + GreenMail container setup
 - `src/main/java/.../infra/exception/ExceptionsHandler.java` — global error handler
 - `src/main/java/.../infra/security/CustomPasswordEncoder.java` — pepper+bcrypt logic
+- `src/main/java/.../infra/service/CookieService.java` — session cookie management
+- `src/main/java/.../infra/service/EmailService.java` — async email dispatch
+- `src/main/java/.../infra/service/UserContext.java` — thread-local session/user holder (cleared in `SessionFilter.finally`)
+- `src/main/java/.../infra/service/AuthorizationService.java` — feature-flag checks (`loggedUserCan`, `can`)
+- `src/main/java/.../infra/filter/SessionFilter.java` — populates `UserContext` on every request
+- `src/main/java/.../infra/annotation/RequiresFeature.java` — method-level authorization annotation
+- `src/main/java/.../infra/aspect/RequiresFeatureAspect.java` — AOP enforcement of `@RequiresFeature`
 
